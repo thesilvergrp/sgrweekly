@@ -1,0 +1,121 @@
+.hero {
+  padding-block: var(--space-9) var(--space-11);
+}
+
+@media (min-width: 1024px) {
+  .hero {
+    padding-block: var(--space-12) var(--space-13);
+  }
+}
+
+.layout {
+  display: grid;
+  gap: var(--space-9);
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .layout {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: var(--space-11);
+  }
+}
+
+.overline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--clay);
+}
+
+.rule {
+  width: 2.5rem;
+  height: 1px;
+  background: var(--clay);
+}
+
+.headline {
+  margin-top: var(--space-5);
+  font-size: var(--text-display);
+  line-height: var(--leading-display);
+  max-width: 14ch;
+}
+
+.emphasis {
+  font-style: italic;
+  font-weight: 400;
+}
+
+.lede {
+  margin-top: var(--space-6);
+  max-width: 48ch;
+  font-size: var(--text-lg);
+  color: var(--ink-muted);
+}
+
+.finder {
+  margin-top: var(--space-8);
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6) var(--space-9);
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--line);
+}
+
+.statValue {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.statLabel {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  max-width: 18ch;
+}
+
+.mosaic {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.tile {
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  aspect-ratio: 3 / 4;
+}
+
+.tileWide {
+  grid-column: span 2;
+  aspect-ratio: 16 / 10;
+}
+
+.tileOffset {
+  margin-top: var(--space-7);
+}
+
+@media (max-width: 1023px) {
+  .tileOffset {
+    margin-top: 0;
+  }
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

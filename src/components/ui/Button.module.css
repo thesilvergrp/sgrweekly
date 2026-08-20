@@ -1,0 +1,123 @@
+.base {
+  --btn-height: 2.75rem;
+  --btn-padding: 0 var(--space-5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--btn-height);
+  padding: var(--btn-padding);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--duration) var(--ease),
+    border-color var(--duration) var(--ease), color var(--duration) var(--ease);
+}
+
+.base:disabled,
+.base[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.sm {
+  --btn-height: 2.25rem;
+  --btn-padding: 0 var(--space-3);
+  font-size: var(--text-xs);
+}
+
+.lg {
+  --btn-height: 3.25rem;
+  --btn-padding: 0 var(--space-7);
+  font-size: var(--text-base);
+}
+
+.block {
+  display: flex;
+  width: 100%;
+}
+
+/* ── Variants ─────────────────────────────────────────────────────────── */
+.primary {
+  background: var(--clay);
+  border-color: var(--clay);
+  color: #fff;
+}
+.primary:hover:not(:disabled) {
+  background: var(--clay-strong);
+  border-color: var(--clay-strong);
+}
+
+.secondary {
+  background: transparent;
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.secondary:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--ink-inverse);
+}
+
+.quiet {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+}
+.quiet:hover:not(:disabled) {
+  border-color: var(--line-strong);
+  background: var(--ground-deep);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--ink-muted);
+}
+.ghost:hover:not(:disabled) {
+  background: var(--ground-deep);
+  color: var(--ink);
+}
+
+.link {
+  --btn-height: auto;
+  --btn-padding: 0;
+  background: none;
+  color: var(--clay);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+}
+.link:hover:not(:disabled) {
+  color: var(--clay-strong);
+}
+
+.danger {
+  background: var(--rust);
+  border-color: var(--rust);
+  color: #fff;
+}
+.danger:hover:not(:disabled) {
+  background: #741f12;
+  border-color: #741f12;
+}
+
+/* ── Loading ──────────────────────────────────────────────────────────── */
+.spinner {
+  animation: spin 900ms linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 3s;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,103 @@
+.panel {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.bare {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: var(--text-xl);
+}
+
+.fromRate {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+
+.fromRate strong {
+  font-size: var(--text-lg);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.dateCell {
+  padding: var(--space-3) var(--space-4);
+}
+
+.dateCell + .dateCell {
+  border-left: 1px solid var(--line);
+}
+
+.dateLabel {
+  display: block;
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.dateValue {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.dateEmpty {
+  color: var(--ink-faint);
+  font-weight: 400;
+}
+
+.controls {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.controlDivider {
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-4);
+}
+
+.actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.footnote {
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  text-align: center;
+  line-height: var(--leading-snug);
+}
+
+.clear {
+  justify-self: center;
+}

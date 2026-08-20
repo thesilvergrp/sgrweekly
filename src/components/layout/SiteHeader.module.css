@@ -1,0 +1,235 @@
+.skip {
+  position: absolute;
+  left: var(--space-4);
+  top: -4rem;
+  z-index: calc(var(--z-header) + 1);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-inverse);
+  color: var(--ink-inverse);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  transition: top var(--duration) var(--ease);
+}
+
+.skip:focus {
+  top: var(--space-4);
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  background: color-mix(in srgb, var(--ground) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--duration) var(--ease), background-color var(--duration) var(--ease);
+}
+
+.scrolled {
+  border-bottom-color: var(--line);
+  background: color-mix(in srgb, var(--ground) 96%, transparent);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  min-height: var(--header-height);
+}
+
+.nav {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-7);
+  }
+}
+
+.navLink {
+  position: relative;
+  padding: var(--space-2) 0;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ink-muted);
+  background: none;
+  transition: color var(--duration) var(--ease);
+}
+
+.navLink::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--clay);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--duration) var(--ease);
+}
+
+.navLink:hover {
+  color: var(--ink);
+}
+
+.navLink[aria-current='true'] {
+  color: var(--ink);
+}
+
+.navLink[aria-current='true']::after {
+  transform: scaleX(1);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.phone {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .phone {
+    display: inline-flex;
+  }
+}
+
+.menuButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 2.5rem;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.menuButton:hover {
+  border-color: var(--ink);
+}
+
+@media (min-width: 1024px) {
+  .menuButton {
+    display: none;
+  }
+}
+
+/* ── Drawer ───────────────────────────────────────────────────────────── */
+.drawerRoot {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-drawer);
+}
+
+.drawerScrim {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay-scrim);
+}
+
+.drawer {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: min(22rem, 100%);
+  display: flex;
+  flex-direction: column;
+  background: var(--ground);
+  border-left: 1px solid var(--line);
+  box-shadow: var(--shadow-overlay);
+  animation: slideIn var(--duration-slow) var(--ease);
+}
+
+.drawerHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--line);
+  min-height: var(--header-height);
+}
+
+.drawerNav {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4) 0;
+}
+
+.drawerLink {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  color: var(--ink);
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.drawerIndex {
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-overline);
+  color: var(--ink-faint);
+}
+
+.drawerFoot {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-top: 1px solid var(--line);
+}
+
+.drawerContact {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.drawerContact:hover {
+  color: var(--clay);
+}
+
+.closeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+}
+
+.closeButton:hover {
+  background: var(--ground-deep);
+  color: var(--ink);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer {
+    animation: none;
+  }
+}

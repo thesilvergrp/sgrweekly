@@ -1,0 +1,7 @@
+.frame {
+  display: block;
+  width: 100%;
+  height: min(72vh, 46rem);
+  border: 0;
+  background: var(--surface);
+}

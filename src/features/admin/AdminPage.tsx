@@ -1,0 +1,278 @@
+import { useCallback, useMemo, useState } from 'react';
+import { Icon } from '../../components/icons';
+import { Button } from '../../components/ui/Button';
+import { Notice } from '../../components/ui/Notice';
+import { Tag } from '../../components/ui/Tag';
+import { useAuth } from '../../app/auth-context';
+import { useContentControls, useSiteContent, useStaysContent } from '../../app/content-context';
+import type { SiteContentDocument } from '../../content/site-content';
+import type { StaysContentDocument } from '../../content/stays-document';
+import { describeError } from '../../lib/errors';
+import { saveSiteContent, saveStaysContent } from '../../services/content.service';
+import type { Stay } from '../../types/domain';
+import {
+  AboutPanel,
+  AmenitiesPanel,
+  BusinessPanel,
+  CollectionPanel,
+  ContactPanel,
+  CurationPanel,
+  FooterPanel,
+  HeroPanel,
+  MetaPanel,
+} from './SiteCopyPanels';
+import { StaysPanel } from './StaysPanel';
+import styles from './Admin.module.css';
+
+type PanelId =
+  | 'meta'
+  | 'business'
+  | 'hero'
+  | 'collection'
+  | 'amenities'
+  | 'about'
+  | 'contact'
+  | 'footer'
+  | 'curation'
+  | 'stays';
+
+const PANELS: { id: PanelId; label: string; hint: string }[] = [
+  { id: 'hero', label: 'Hero', hint: 'The first thing anyone reads.' },
+  { id: 'collection', label: 'Collection', hint: 'The heading above the grid of homes.' },
+  { id: 'amenities', label: 'What you get', hint: 'The four feature cards.' },
+  { id: 'about', label: 'About', hint: 'Who you are, in your words.' },
+  { id: 'contact', label: 'Contact', hint: 'The enquiry section.' },
+  { id: 'footer', label: 'Footer', hint: 'Blurb and column headings.' },
+  { id: 'curation', label: 'Featured homes', hint: 'Which homes appear on the home page.' },
+  { id: 'stays', label: 'Property text', hint: 'Descriptions, amenities and photos, per home.' },
+  { id: 'business', label: 'Business details', hint: 'Phone, email, areas — used across the site.' },
+  { id: 'meta', label: 'Page title', hint: 'Browser tab and description.' },
+];
+
+interface AdminPageProps {
+  stays: Stay[];
+  onExit: () => void;
+}
+
+/**
+ * The content editor.
+ *
+ * Loaded lazily, so a normal visitor never downloads any of it. Edits are held
+ * as a local draft and published explicitly — nothing is written on keystroke,
+ * because every publish is a live change to the public site.
+ */
+export default function AdminPage({ stays, onExit }: AdminPageProps) {
+  const auth = useAuth();
+  const publishedSite = useSiteContent();
+  const publishedStays = useStaysContent();
+  const { sources, refresh } = useContentControls();
+
+  const [panel, setPanel] = useState<PanelId>('hero');
+  const [siteDraft, setSiteDraft] = useState<SiteContentDocument>(publishedSite);
+  const [staysDraft, setStaysDraft] = useState<StaysContentDocument>(publishedStays);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<unknown>(null);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+
+  const siteDirty = useMemo(
+    () => JSON.stringify(siteDraft) !== JSON.stringify(publishedSite),
+    [siteDraft, publishedSite],
+  );
+  const staysDirty = useMemo(
+    () => JSON.stringify(staysDraft) !== JSON.stringify(publishedStays),
+    [staysDraft, publishedStays],
+  );
+  const dirty = siteDirty || staysDirty;
+
+  const patchSite = useCallback(
+    (patch: Partial<SiteContentDocument>) => setSiteDraft((current) => ({ ...current, ...patch })),
+    [],
+  );
+
+  const publish = async () => {
+    const token = auth.getToken();
+    if (!token) {
+      setSaveError(new Error('Your session expired. Sign in again to publish.'));
+      return;
+    }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      // Only what changed is written, so publishing a heading tweak does not
+      // rewrite the much larger property document.
+      if (siteDirty) await saveSiteContent(siteDraft, token);
+      if (staysDirty) await saveStaysContent(staysDraft, token);
+      setSavedAt(new Date().toLocaleTimeString());
+      refresh();
+    } catch (error) {
+      setSaveError(error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const discard = () => {
+    setSiteDraft(publishedSite);
+    setStaysDraft(publishedStays);
+    setSaveError(null);
+  };
+
+  if (!auth.isConfigured) return <NotConfigured onExit={onExit} />;
+  if (auth.isResolving) return <Centered>Signing you in…</Centered>;
+  if (!auth.session) return <SignIn onExit={onExit} />;
+
+  const active = PANELS.find((item) => item.id === panel) ?? PANELS[0];
+  const friendly = saveError ? describeError(saveError) : null;
+
+  return (
+    <div className={styles.shell}>
+      <header className={styles.bar}>
+        <h1 className={styles.barTitle}>
+          Content editor
+          <span className={styles.barMeta}>
+            Signed in as {auth.session.email ?? 'admin'} · page copy {sources.site} · property text{' '}
+            {sources.stays}
+          </span>
+        </h1>
+
+        <div className={styles.barActions}>
+          {dirty && (
+            <span className={styles.dirty}>
+              <Icon name="alert" size={14} />
+              Unpublished changes
+            </span>
+          )}
+          {!dirty && savedAt && <Tag tone="available">Published {savedAt}</Tag>}
+          <Button variant="ghost" size="sm" onClick={discard} disabled={!dirty || saving}>
+            Discard
+          </Button>
+          <Button size="sm" onClick={publish} loading={saving} disabled={!dirty}>
+            Publish
+          </Button>
+          <Button variant="quiet" size="sm" onClick={onExit}>
+            View site
+          </Button>
+          <Button variant="ghost" size="sm" onClick={auth.signOut}>
+            Sign out
+          </Button>
+        </div>
+      </header>
+
+      <div className={styles.layout}>
+        <nav className={styles.nav} aria-label="Content sections">
+          {PANELS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={styles.navItem}
+              aria-current={item.id === panel ? 'true' : undefined}
+              onClick={() => setPanel(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className={styles.panel}>
+          <div className={styles.panelHead}>
+            <h2 className={styles.panelTitle}>{active.label}</h2>
+            <p className={styles.panelHint}>{active.hint}</p>
+          </div>
+
+          {friendly && (
+            <Notice tone="error" title={friendly.title} detail={friendly.detail}>
+              {friendly.body}
+            </Notice>
+          )}
+
+          {import.meta.env.DEV && auth.session?.idToken === 'dev-no-auth' && (
+            <Notice tone="info" title="Local development — no sign-in">
+              You are editing through the dev server, which writes to ./.content and checks nothing.
+              The deployed editor requires a Cognito sign-in and the Lambda verifies it on every save.
+            </Notice>
+          )}
+
+          {sources.site === 'bundled' && (
+            <Notice tone="warning" title="No published document yet">
+              You are editing the copy built into the site. Publishing writes the first document to
+              the content store; nothing is lost either way, because the built-in copy always stays
+              as the fallback.
+            </Notice>
+          )}
+
+          {panel === 'meta' && <MetaPanel value={siteDraft.meta} patch={patchSite} />}
+          {panel === 'business' && <BusinessPanel value={siteDraft.business} patch={patchSite} />}
+          {panel === 'hero' && <HeroPanel value={siteDraft.hero} patch={patchSite} />}
+          {panel === 'collection' && <CollectionPanel value={siteDraft.collection} patch={patchSite} />}
+          {panel === 'amenities' && <AmenitiesPanel value={siteDraft.amenities} patch={patchSite} />}
+          {panel === 'about' && <AboutPanel value={siteDraft.about} patch={patchSite} />}
+          {panel === 'contact' && <ContactPanel value={siteDraft.contact} patch={patchSite} />}
+          {panel === 'footer' && <FooterPanel value={siteDraft.footer} patch={patchSite} />}
+          {panel === 'curation' && (
+            <CurationPanel featuredStayIds={siteDraft.featuredStayIds} stays={stays} patch={patchSite} />
+          )}
+          {panel === 'stays' && (
+            <StaysPanel document={staysDraft} stays={stays} onChange={setStaysDraft} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Centered({ children }: { children: React.ReactNode }) {
+  return (
+    <div className={styles.shell}>
+      <div className={styles.centered}>{children}</div>
+    </div>
+  );
+}
+
+function SignIn({ onExit }: { onExit: () => void }) {
+  const auth = useAuth();
+  return (
+    <div className={styles.shell}>
+      <div className={styles.centered}>
+        <div className={styles.signIn}>
+          <h1 className={styles.panelTitle}>Content editor</h1>
+          <p className={styles.panelHint}>
+            Sign in to change the wording on the site. Editing is limited to the accounts we have
+            set up.
+          </p>
+          {auth.error && (
+            <Notice tone="error" title="That sign-in did not complete">
+              {auth.error}
+            </Notice>
+          )}
+          <Button size="lg" iconStart="key" onClick={auth.signIn}>
+            Sign in
+          </Button>
+          <Button variant="link" onClick={onExit}>
+            Back to the site
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NotConfigured({ onExit }: { onExit: () => void }) {
+  return (
+    <div className={styles.shell}>
+      <div className={styles.centered}>
+        <div className={styles.signIn}>
+          <h1 className={styles.panelTitle}>Editing is not set up here</h1>
+          <p className={styles.panelHint}>
+            This build has no sign-in configuration, so the editor cannot run. Set
+            <span className={styles.mono}> VITE_COGNITO_DOMAIN </span> and
+            <span className={styles.mono}> VITE_COGNITO_CLIENT_ID </span>
+            on the environment that should offer editing — see docs/content-architecture.md.
+          </p>
+          <Button variant="secondary" onClick={onExit}>
+            Back to the site
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

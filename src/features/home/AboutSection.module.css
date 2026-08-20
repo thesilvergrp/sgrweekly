@@ -1,0 +1,73 @@
+.section {
+  padding-block: var(--section-y);
+}
+
+.layout {
+  display: grid;
+  gap: var(--space-8);
+  margin-top: var(--space-9);
+}
+
+@media (min-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-11);
+    align-items: start;
+  }
+}
+
+.prose {
+  display: grid;
+  gap: var(--space-5);
+  max-width: var(--measure);
+  color: var(--ink-muted);
+  font-size: var(--text-lg);
+}
+
+.pullQuote {
+  margin-top: var(--space-6);
+  padding-left: var(--space-6);
+  border-left: 2px solid var(--clay);
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-style: italic;
+  color: var(--ink);
+  line-height: var(--leading-snug);
+}
+
+.points {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.point {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-4);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--line);
+}
+
+.point:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.pointIcon {
+  color: var(--clay);
+  margin-top: 2px;
+}
+
+.pointTitle {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.pointBody {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  line-height: var(--leading-snug);
+}

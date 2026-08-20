@@ -1,0 +1,32 @@
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-12) var(--space-5);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  background: var(--surface);
+}
+
+.icon {
+  color: var(--ink-faint);
+}
+
+.title {
+  font-size: var(--text-xl);
+}
+
+.body {
+  max-width: 42ch;
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+
+.actions {
+  margin-top: var(--space-2);
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+}

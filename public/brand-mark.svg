@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Silver Group Rentals">
+  <rect width="32" height="32" rx="4" fill="#17150f" />
+  <path d="M8 20.5 16 8l8 12.5" fill="none" stroke="#f7f4ee" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+  <path d="M11 24h10" fill="none" stroke="#a9482a" stroke-width="2" stroke-linecap="round" />
+</svg>

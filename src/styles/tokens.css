@@ -1,0 +1,142 @@
+/**
+ * Design tokens — "Verandah".
+ *
+ * Single source of truth for colour, type, space, radius, elevation and motion.
+ * Components reference semantic tokens only; no component may hard-code a hex
+ * value or a raw pixel size that belongs to a scale.
+ */
+
+:root {
+  /* ── Colour: ground & surfaces ─────────────────────────────────────── */
+  --ground: #f7f4ee;
+  --ground-deep: #efeae1;
+  --surface: #ffffff;
+  --surface-sunken: #efeae1;
+  --surface-inverse: #17150f;
+  --overlay-scrim: rgba(23, 21, 15, 0.58);
+
+  /* ── Colour: ink ───────────────────────────────────────────────────── */
+  --ink: #17150f;
+  --ink-muted: #5c564a;
+  --ink-faint: #8a8272;
+  --ink-inverse: #f7f4ee;
+
+  /* ── Colour: lines ─────────────────────────────────────────────────── */
+  --line: #e0d9cb;
+  --line-strong: #c6bca8;
+  --line-inverse: rgba(247, 244, 238, 0.22);
+
+  /* ── Colour: accents ───────────────────────────────────────────────── */
+  --clay: #a9482a;
+  --clay-strong: #8c371f;
+  --clay-tint: #f5e7e0;
+  --moss: #3f5b4a;
+  --moss-tint: #e4ebe4;
+  --ochre: #9a6b15;
+  --ochre-tint: #f6ecd8;
+  --rust: #8e2c1c;
+  --rust-tint: #f7e3df;
+  --focus: #1f5f8b;
+
+  /* ── Typography ────────────────────────────────────────────────────── */
+  --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-body: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: clamp(1.0625rem, 0.99rem + 0.3vw, 1.125rem);
+  --text-xl: clamp(1.1875rem, 1.09rem + 0.45vw, 1.3125rem);
+  --text-2xl: clamp(1.375rem, 1.2rem + 0.8vw, 1.625rem);
+  --text-3xl: clamp(1.75rem, 1.45rem + 1.4vw, 2.25rem);
+  --text-4xl: clamp(2.125rem, 1.65rem + 2.1vw, 3rem);
+  --text-display: clamp(2.75rem, 1.9rem + 4.2vw, 4.5rem);
+
+  --leading-display: 1.04;
+  --leading-tight: 1.16;
+  --leading-snug: 1.35;
+  --leading-body: 1.62;
+
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.06em;
+  --tracking-overline: 0.16em;
+
+  --measure: 68ch;
+  --measure-narrow: 52ch;
+
+  /* ── Space (4px base) ──────────────────────────────────────────────── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 2rem;
+  --space-8: 2.5rem;
+  --space-9: 3rem;
+  --space-10: 3.5rem;
+  --space-11: 4rem;
+  --space-12: 5rem;
+  --space-13: 6rem;
+  --space-14: 6rem;
+  --space-15: 7.5rem;
+  --space-16: 8rem;
+
+  --section-y: var(--space-14);
+
+  /* ── Layout ────────────────────────────────────────────────────────── */
+  --container-max: 1180px;
+  --container-gutter: 1.25rem;
+  --grid-gutter: 1.5rem;
+  --header-height: 4rem;
+
+  /* ── Radius ────────────────────────────────────────────────────────── */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 999px;
+
+  /* ── Elevation ─────────────────────────────────────────────────────── */
+  --shadow-raised: 0 1px 2px rgba(23, 21, 15, 0.06), 0 6px 18px -8px rgba(23, 21, 15, 0.18);
+  --shadow-overlay: 0 24px 60px -20px rgba(23, 21, 15, 0.4), 0 2px 8px rgba(23, 21, 15, 0.1);
+
+  /* ── Motion ────────────────────────────────────────────────────────── */
+  --ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration: 180ms;
+  --duration-slow: 240ms;
+
+  /* ── Z layers ──────────────────────────────────────────────────────── */
+  --z-sticky: 20;
+  --z-header: 40;
+  --z-drawer: 50;
+  --z-modal: 60;
+  --z-toast: 70;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --container-gutter: 2rem;
+    --header-height: 4.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --container-gutter: 3rem;
+    --section-y: var(--space-16);
+    --header-height: 5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 1ms;
+    --duration: 1ms;
+    --duration-slow: 1ms;
+  }
+}

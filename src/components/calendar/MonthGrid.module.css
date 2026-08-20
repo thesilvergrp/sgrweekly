@@ -1,0 +1,138 @@
+.month {
+  min-width: 0;
+}
+
+.caption {
+  padding-bottom: var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 600;
+  text-align: center;
+}
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line);
+  padding-bottom: var(--space-2);
+}
+
+.weekday {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  padding-top: var(--space-2);
+}
+
+.pad {
+  aspect-ratio: 1;
+}
+
+.cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  aspect-ratio: 1;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  transition: background-color var(--duration-fast) var(--ease),
+    border-color var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+}
+
+.cell:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+.cell:disabled {
+  cursor: not-allowed;
+}
+
+.rate {
+  font-size: 0.5625rem;
+  color: var(--ink-faint);
+  letter-spacing: 0;
+}
+
+/* States */
+.past {
+  color: var(--ink-faint);
+  opacity: 0.5;
+}
+
+.reserved {
+  color: var(--rust);
+  background: var(--rust-tint);
+}
+
+.reserved .num {
+  text-decoration: line-through;
+}
+
+.held {
+  color: var(--ink-faint);
+  background: var(--surface-sunken);
+}
+
+.held .num {
+  text-decoration: line-through;
+}
+
+.blocked {
+  color: var(--ink-faint);
+  opacity: 0.65;
+}
+
+.inRange {
+  background: var(--clay-tint);
+  color: var(--clay-strong);
+  border-radius: 0;
+}
+
+.rangeStart {
+  border-top-left-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.rangeEnd {
+  border-top-right-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.selected {
+  background: var(--clay);
+  border-color: var(--clay);
+  color: #fff;
+  font-weight: 700;
+}
+
+.selected .rate {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.today::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+}
