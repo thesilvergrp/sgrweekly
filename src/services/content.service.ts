@@ -64,6 +64,25 @@ export async function fetchStaysContent(signal?: AbortSignal): Promise<ResolvedS
 }
 
 /**
+ * The COMPLETE stays document, including unpublished properties — admin only.
+ *
+ * The editor must seed its draft from this, not from `fetchStaysContent`. That
+ * public read is trimmed to published properties, so seeding from it and then
+ * publishing would erase every unpublished property's copy.
+ */
+export async function fetchAllStaysContent(
+  token: string,
+  signal?: AbortSignal,
+): Promise<StaysContentDocument> {
+  const raw = await apiRequest<unknown>('/api/content/stays/all', {
+    token,
+    signal,
+    timeoutMs: 12_000,
+  });
+  return parseStaysContent(raw);
+}
+
+/**
  * Publishes a content document. Requires an admin bearer token; the Lambda
  * verifies it against the Cognito user pool before writing to S3. Errors are
  * propagated so the editor can show exactly what went wrong.

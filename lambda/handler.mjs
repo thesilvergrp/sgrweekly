@@ -189,15 +189,6 @@ async function sendContactMessage(body) {
     return { ok: true };
   }
 
-  const now = Date.now();
-  if (now - contactWindowStart > CONTACT_WINDOW_MS) {
-    contactWindowStart = now;
-    contactCount = 0;
-  }
-  if (++contactCount > CONTACT_MAX_PER_WINDOW) {
-    throw new ProxyError(429, 'Too many messages just now — please try again shortly');
-  }
-
   const name = clean(body?.name, 200);
   const email = clean(body?.email, 254);
   const phone = clean(body?.phone, 50);
@@ -209,6 +200,18 @@ async function sendContactMessage(body) {
   }
   if (!EMAIL_RE.test(email)) {
     throw new ProxyError(400, 'That email address does not look valid');
+  }
+
+  // Counted here, after validation, so the limit caps messages actually SENT.
+  // Counting rejected requests instead would throttle someone who mistypes
+  // their address twice and then corrects it, which is a real user, not abuse.
+  const now = Date.now();
+  if (now - contactWindowStart > CONTACT_WINDOW_MS) {
+    contactWindowStart = now;
+    contactCount = 0;
+  }
+  if (++contactCount > CONTACT_MAX_PER_WINDOW) {
+    throw new ProxyError(429, 'Too many messages just now — please try again shortly');
   }
 
   const text = [
@@ -322,6 +325,39 @@ async function requireAdmin(headers) {
   return claims;
 }
 
+/**
+ * The public stays document, trimmed to the properties actually published.
+ *
+ * The stored document holds editorial for every property, including ones being
+ * prepared before they go live, so an anonymous read must not return all of it.
+ *
+ * This is a SEPARATE route from the admin's full read on purpose. Serving both
+ * audiences from one cacheable URL would mean a response that varies by
+ * Authorization header — and a CDN that ignores that header would happily serve
+ * one audience's copy to the other.
+ *
+ * If the site document cannot be read we cannot know what is published, so the
+ * safe answer is an empty overlay: the site falls back to the copy built into
+ * its own bundle rather than over-disclosing.
+ */
+async function readPublishedStays() {
+  const document = await readContent('stays');
+
+  let published = [];
+  try {
+    published = (await readContent('site'))?.featuredStayIds ?? [];
+  } catch {
+    published = [];
+  }
+
+  const allowed = new Set(published);
+  const stays = {};
+  for (const [id, entry] of Object.entries(document?.stays ?? {})) {
+    if (allowed.has(id)) stays[id] = entry;
+  }
+  return { ...document, stays };
+}
+
 // ─── OwnerRez client ────────────────────────────────────────────────────────
 async function or(path, { method = 'GET', body, base = OR_BASE } = {}) {
   const headers = {
@@ -377,10 +413,20 @@ async function route(method, path, query, body, headers) {
   // ─── Editable content ─────────────────────────────────────────────────────
   // Public reads; authenticated writes. A missing document answers 404, which
   // the site treats as "use the copy built into the bundle".
+  // Admin-only: the COMPLETE stays document, including unpublished properties.
+  // The editor must seed its draft from this — seeding from the trimmed public
+  // document and then publishing would erase every unpublished property's copy.
+  if (method === 'GET' && path === '/api/content/stays/all') {
+    await requireAdmin(headers);
+    return readContent('stays');
+  }
+
   if (path === '/api/content' || path === '/api/content/stays') {
     const name = path === '/api/content/stays' ? 'stays' : 'site';
 
-    if (method === 'GET') return readContent(name);
+    if (method === 'GET') {
+      return name === 'stays' ? readPublishedStays() : readContent(name);
+    }
 
     if (method === 'PUT') {
       await requireAdmin(headers);
@@ -470,10 +516,14 @@ export const handler = async (event) => {
     // Content reads are cached at the edge so a page load rarely reaches S3;
     // an edit is visible within the max-age. Everything else stays uncached,
     // because availability and pricing must never be stale.
-    const extra =
-      method === 'GET' && path.startsWith('/api/content')
-        ? { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' }
-        : undefined;
+    // Public content reads are edge-cacheable. The admin's full read is not:
+    // it is authorization-dependent and must never be stored by a shared cache.
+    let extra;
+    if (method === 'GET' && path === '/api/content/stays/all') {
+      extra = { 'Cache-Control': 'no-store' };
+    } else if (method === 'GET' && path.startsWith('/api/content')) {
+      extra = { 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' };
+    }
     return respond(200, payload, extra);
   } catch (err) {
     if (err instanceof ProxyError) {

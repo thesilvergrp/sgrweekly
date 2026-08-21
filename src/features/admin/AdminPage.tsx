@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Icon } from '../../components/icons';
 import { Button } from '../../components/ui/Button';
 import { Notice } from '../../components/ui/Notice';
@@ -8,7 +8,11 @@ import { useContentControls, useSiteContent, useStaysContent } from '../../app/c
 import type { SiteContentDocument } from '../../content/site-content';
 import type { StaysContentDocument } from '../../content/stays-document';
 import { describeError } from '../../lib/errors';
-import { saveSiteContent, saveStaysContent } from '../../services/content.service';
+import {
+  fetchAllStaysContent,
+  saveSiteContent,
+  saveStaysContent,
+} from '../../services/content.service';
 import type { Stay } from '../../types/domain';
 import {
   AboutPanel,
@@ -69,18 +73,44 @@ export default function AdminPage({ stays, onExit }: AdminPageProps) {
 
   const [panel, setPanel] = useState<PanelId>('hero');
   const [siteDraft, setSiteDraft] = useState<SiteContentDocument>(publishedSite);
+  // Seeded from the ADMIN read, which includes unpublished properties. The
+  // context copy is the trimmed public one; publishing from that would erase
+  // every unpublished property's copy, so the editor waits for the full
+  // document before it will let the stays document be published.
   const [staysDraft, setStaysDraft] = useState<StaysContentDocument>(publishedStays);
+  const [staysBase, setStaysBase] = useState<StaysContentDocument | null>(null);
+  const [staysLoadError, setStaysLoadError] = useState<unknown>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<unknown>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+
+  const token = auth.session ? auth.getToken() : null;
+
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    fetchAllStaysContent(token)
+      .then((full) => {
+        if (!active) return;
+        setStaysBase(full);
+        setStaysDraft(full);
+        setStaysLoadError(null);
+      })
+      .catch((error: unknown) => {
+        if (active) setStaysLoadError(error);
+      });
+    return () => {
+      active = false;
+    };
+  }, [token]);
 
   const siteDirty = useMemo(
     () => JSON.stringify(siteDraft) !== JSON.stringify(publishedSite),
     [siteDraft, publishedSite],
   );
   const staysDirty = useMemo(
-    () => JSON.stringify(staysDraft) !== JSON.stringify(publishedStays),
-    [staysDraft, publishedStays],
+    () => staysBase !== null && JSON.stringify(staysDraft) !== JSON.stringify(staysBase),
+    [staysDraft, staysBase],
   );
   const dirty = siteDirty || staysDirty;
 
@@ -101,7 +131,10 @@ export default function AdminPage({ stays, onExit }: AdminPageProps) {
       // Only what changed is written, so publishing a heading tweak does not
       // rewrite the much larger property document.
       if (siteDirty) await saveSiteContent(siteDraft, token);
-      if (staysDirty) await saveStaysContent(staysDraft, token);
+      if (staysDirty) {
+        await saveStaysContent(staysDraft, token);
+        setStaysBase(staysDraft);
+      }
       setSavedAt(new Date().toLocaleTimeString());
       refresh();
     } catch (error) {
@@ -113,7 +146,7 @@ export default function AdminPage({ stays, onExit }: AdminPageProps) {
 
   const discard = () => {
     setSiteDraft(publishedSite);
-    setStaysDraft(publishedStays);
+    setStaysDraft(staysBase ?? publishedStays);
     setSaveError(null);
   };
 
@@ -211,9 +244,23 @@ export default function AdminPage({ stays, onExit }: AdminPageProps) {
           {panel === 'curation' && (
             <CurationPanel featuredStayIds={siteDraft.featuredStayIds} stays={stays} patch={patchSite} />
           )}
-          {panel === 'stays' && (
-            <StaysPanel document={staysDraft} stays={stays} onChange={setStaysDraft} />
-          )}
+          {panel === 'stays' &&
+            (staysLoadError ? (
+              <Notice
+                tone="error"
+                title="Could not load the property text"
+                detail={describeError(staysLoadError).detail}
+              >
+                Editing is disabled for this section until it loads, so a publish cannot overwrite
+                copy that was never read. Reload the page to try again.
+              </Notice>
+            ) : staysBase === null ? (
+              <Notice tone="info" title="Loading property text…">
+                Fetching the full set, including properties that are not published yet.
+              </Notice>
+            ) : (
+              <StaysPanel document={staysDraft} stays={stays} onChange={setStaysDraft} />
+            ))}
         </div>
       </div>
     </div>
