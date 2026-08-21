@@ -211,7 +211,7 @@ export const defaultSiteContent: SiteContentDocument = {
       'Hosting an event',
       'Something else',
     ],
-    smallprint: 'This opens your own email app — nothing is sent from this page.',
+    smallprint: 'We usually reply the same day. Your details go to us and nobody else.',
   },
 
   footer: {

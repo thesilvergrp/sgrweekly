@@ -6,6 +6,8 @@ import { Notice } from '../../components/ui/Notice';
 import { SectionHeading } from '../../components/ui/SectionHeading';
 import { useSiteContent } from '../../app/content-context';
 import { StayMap } from '../map/StayMap';
+import { describeError } from '../../lib/errors';
+import { sendContactMessage, validateContact } from '../../services/contact.service';
 import type { Stay } from '../../types/domain';
 import styles from './ContactSection.module.css';
 
@@ -16,12 +18,11 @@ interface ContactSectionProps {
 /**
  * General enquiries.
  *
- * There is deliberately NO backend endpoint behind this form: the proxy exposes
- * only property-scoped inquiries (which need a property id and dates), and no
- * SES or messaging integration exists. Rather than pretending a message was
- * transmitted — which is what the previous implementation did with a 600ms
- * timer — this composes a prefilled email and hands it to the visitor's mail
- * client, then shows the address so they can always finish the job manually.
+ * Posts to `/api/contact`, which relays through SES to the business inbox with
+ * the sender's address as Reply-To. If that fails for any reason the form does
+ * not pretend otherwise — it says so and offers the same prefilled `mailto:`
+ * hand-off the site used before SES existed, so a visitor is never left with a
+ * message that silently went nowhere.
  */
 export function ContactSection({ stays }: ContactSectionProps) {
   const { business, contact } = useSiteContent();
@@ -32,24 +33,12 @@ export function ContactSection({ stays }: ContactSectionProps) {
   const [message, setMessage] = useState('');
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [handedOff, setHandedOff] = useState(false);
+  const [company, setCompany] = useState(''); // honeypot
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [failure, setFailure] = useState<unknown>(null);
 
-  const validate = () => {
-    const next: Record<string, string> = {};
-    if (!name.trim()) next.name = 'Tell us who you are.';
-    if (!email.trim()) next.email = 'We need somewhere to reply.';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) next.email = 'That address looks incomplete.';
-    if (!message.trim()) next.message = 'Let us know what you need.';
-    if (!consent) next.consent = 'Please confirm we can reply to you.';
-    return next;
-  };
-
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    const found = validate();
-    setErrors(found);
-    if (Object.keys(found).length > 0) return;
-
+  const mailtoHref = () => {
     const body = [
       message.trim(),
       '',
@@ -59,11 +48,30 @@ export function ContactSection({ stays }: ContactSectionProps) {
     ]
       .filter(Boolean)
       .join('\n');
-
-    window.location.href = `mailto:${business.email}?subject=${encodeURIComponent(
+    return `mailto:${business.email}?subject=${encodeURIComponent(
       `${topic} — ${name.trim()}`,
     )}&body=${encodeURIComponent(body)}`;
-    setHandedOff(true);
+  };
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    const input = { name, email, phone, topic, message, company };
+    const found = validateContact(input);
+    setErrors(found);
+    if (!consent) found.consent = 'Please confirm we can reply to you.';
+    setErrors(found);
+    if (Object.keys(found).length > 0) return;
+
+    setSending(true);
+    setFailure(null);
+    try {
+      await sendContactMessage(input);
+      setSent(true);
+    } catch (error) {
+      setFailure(error);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -122,18 +130,26 @@ export function ContactSection({ stays }: ContactSectionProps) {
           </div>
 
           <form className={styles.form} onSubmit={handleSubmit} noValidate>
-            {handedOff && (
+            {sent && (
+              <Notice tone="success" title="Message sent">
+                Thanks — that has landed in our inbox and we will reply to {email.trim()}{' '}
+                {business.responseWindow}. If it is urgent, call {business.phone}.
+              </Notice>
+            )}
+
+            {failure !== null && (
               <Notice
-                tone="success"
-                title="Your email is ready to send"
+                tone="error"
+                title="We could not send that"
+                detail={describeError(failure).detail}
                 actions={
-                  <LinkButton href={`mailto:${business.email}`} size="sm" variant="quiet" iconStart="mail">
-                    Open it again
+                  <LinkButton href={mailtoHref()} size="sm" variant="quiet" iconStart="mail">
+                    Send it by email instead
                   </LinkButton>
                 }
               >
-                We opened a prefilled message in your email app. If nothing happened, write to{' '}
-                {business.email} or call {business.phone} and we will pick it up from there.
+                Nothing was delivered. Use the button to send the same message from your own email
+                app, or call {business.phone} and we will pick it up from there.
               </Notice>
             )}
 
@@ -200,6 +216,21 @@ export function ContactSection({ stays }: ContactSectionProps) {
               )}
             </Field>
 
+            {/* Honeypot: off-screen and hidden from assistive tech, so only a bot
+                fills it. The server drops those and still answers 200. */}
+            <div aria-hidden="true" className="u-visually-hidden">
+              <label htmlFor="contact-company">Company (leave blank)</label>
+              <input
+                id="contact-company"
+                name="company"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={company}
+                onChange={(event) => setCompany(event.target.value)}
+              />
+            </div>
+
             <Checkbox checked={consent} onChange={(event) => setConsent(event.target.checked)}>
               You can contact me about this enquiry. We never pass details to anyone else.
               {errors.consent && (
@@ -211,8 +242,8 @@ export function ContactSection({ stays }: ContactSectionProps) {
             </Checkbox>
 
             <div className={styles.actions}>
-              <Button type="submit" size="lg" iconStart="mail">
-                Compose the email
+              <Button type="submit" size="lg" iconStart="mail" loading={sending} disabled={sent}>
+                {sent ? 'Sent' : 'Send message'}
               </Button>
               <p className={styles.smallprint}>{contact.smallprint}</p>
             </div>

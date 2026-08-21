@@ -14,6 +14,7 @@
 
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 import { createPublicKey, verify as verifySignature } from 'node:crypto';
 
 const OR_BASE = 'https://api.ownerrez.com/v2';
@@ -33,6 +34,17 @@ const COGNITO_USER_POOL_ID = process.env.COGNITO_USER_POOL_ID ?? '';
 const COGNITO_CLIENT_ID = process.env.COGNITO_CLIENT_ID ?? '';
 // Optional: when set, the caller must also be in this Cognito group.
 const COGNITO_ADMIN_GROUP = process.env.COGNITO_ADMIN_GROUP ?? '';
+
+// ─── Contact form (SES) ─────────────────────────────────────────────────────
+// Optional: with CONTACT_TO unset the route answers 503 and the site keeps its
+// mailto: fallback, so a misconfiguration degrades rather than breaks.
+const CONTACT_TO = process.env.CONTACT_TO ?? '';
+const CONTACT_FROM = process.env.CONTACT_FROM ?? '';
+// Crude flood guard: per warm container, so it blunts a naive script rather
+// than a distributed one. The real ceilings are SES's own sending quota and,
+// if abuse ever appears, WAF or a challenge in front of the route.
+const CONTACT_MAX_PER_WINDOW = Number(process.env.CONTACT_MAX_PER_WINDOW ?? 5);
+const CONTACT_WINDOW_MS = 60_000;
 
 /** Logical document name → S3 key. Nothing else is readable or writable. */
 const CONTENT_DOCUMENTS = {
@@ -143,6 +155,91 @@ async function writeContent(name, document) {
   // container. Other warm containers catch up within CONTENT_TTL_MS.
   contentCache.delete(name);
   return { ok: true, document: name, bytes: serialised.length };
+}
+
+// ─── Contact form ───────────────────────────────────────────────────────────
+const ses = CONTACT_TO ? new SESv2Client({}) : null;
+
+let contactWindowStart = 0;
+let contactCount = 0;
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Trim, collapse newlines that could forge headers, and cap the length. */
+function clean(value, max) {
+  if (typeof value !== 'string') return '';
+  return value.replace(/[\r\n]+/g, ' ').trim().slice(0, max);
+}
+
+/** Message body keeps its newlines; only the length is capped. */
+function cleanBody(value, max) {
+  if (typeof value !== 'string') return '';
+  return value.trim().slice(0, max);
+}
+
+async function sendContactMessage(body) {
+  if (!ses || !CONTACT_TO || !CONTACT_FROM) {
+    throw new ProxyError(503, 'Contact form is not configured');
+  }
+
+  // Honeypot: a field no human sees. Anything that fills it is a bot, and it
+  // gets a cheerful 200 so it has no signal to adapt to.
+  if (clean(body?.company, 200)) {
+    console.log('[contact] honeypot triggered, dropping silently');
+    return { ok: true };
+  }
+
+  const now = Date.now();
+  if (now - contactWindowStart > CONTACT_WINDOW_MS) {
+    contactWindowStart = now;
+    contactCount = 0;
+  }
+  if (++contactCount > CONTACT_MAX_PER_WINDOW) {
+    throw new ProxyError(429, 'Too many messages just now — please try again shortly');
+  }
+
+  const name = clean(body?.name, 200);
+  const email = clean(body?.email, 254);
+  const phone = clean(body?.phone, 50);
+  const topic = clean(body?.topic, 120) || 'Website enquiry';
+  const message = cleanBody(body?.message, 5000);
+
+  if (!name || !email || !message) {
+    throw new ProxyError(400, 'name, email and message are required');
+  }
+  if (!EMAIL_RE.test(email)) {
+    throw new ProxyError(400, 'That email address does not look valid');
+  }
+
+  const text = [
+    `Topic:   ${topic}`,
+    `Name:    ${name}`,
+    `Email:   ${email}`,
+    phone ? `Phone:   ${phone}` : null,
+    '',
+    message,
+    '',
+    '— sent from the sgrweekly.net contact form',
+  ]
+    .filter((line) => line !== null)
+    .join('\n');
+
+  await ses.send(
+    new SendEmailCommand({
+      FromEmailAddress: CONTACT_FROM,
+      Destination: { ToAddresses: [CONTACT_TO] },
+      // Replying in the mail client reaches the guest, not the no-reply box.
+      ReplyToAddresses: [email],
+      Content: {
+        Simple: {
+          Subject: { Data: `[Website] ${topic} — ${name}`, Charset: 'UTF-8' },
+          Body: { Text: { Data: text, Charset: 'UTF-8' } },
+        },
+      },
+    }),
+  );
+
+  return { ok: true };
 }
 
 // ─── Admin authentication (Cognito id token, RS256) ─────────────────────────
@@ -320,6 +417,10 @@ async function route(method, path, query, body, headers) {
       throw new ProxyError(400, 'start and end query params are required');
     }
     return listPricing(m[1], query.start, query.end);
+  }
+
+  if (method === 'POST' && path === '/api/contact') {
+    return sendContactMessage(body);
   }
 
   if (method === 'POST' && path === '/api/inquiries') {
