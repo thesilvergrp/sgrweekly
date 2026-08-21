@@ -165,7 +165,7 @@ each night's `amount`; nights missing from the feed fall back to the surrounding
 |---|---|---|---|---|
 | **Amplify Hosting** | App serving `dist/` per `amplify.yml` (`npm ci` → `npm run build`, artifacts `dist/**/*`) | Serves the SPA. `amplify.yml` is unchanged — the new app builds with the same commands and output directory. | `amplify.yml` (repo) | **No** |
 | **Amplify Hosting — rewrites** | `/api/<*>` → `https://<fn>.lambda-url.<region>.on.aws/api/<*>`, type **200 (Rewrite)** | The reason all data calls are same-origin `/api/*`. The new frontend keeps every call under `/api/`, so **no rewrite rule change is required**. | Amplify console | **No** |
-| **Amplify Hosting — SPA fallback** | *Not configured* | Consequence: only `/` is guaranteed to serve `index.html`. **This is why the new app keeps `?property=<slug>` query-param routing on `/` instead of introducing `/stays/<slug>` path routing** — path routing would require adding a `/<*> → /index.html` 200 rewrite, an infrastructure change that is out of scope. | Amplify console | **No** |
+| **Amplify Hosting — SPA fallback** | `/<*>` → `/index.html`, type **404-200**. *Verified in the account (app `d3il76884xzdca`, us-east-2) — an earlier revision of this document wrongly recorded it as absent, inferred from DEPLOY.md rather than checked.* | Path routing (`/stays/<slug>`) is therefore available. The app still uses `?property=<slug>` for the reason that survives: it is the parameter already in circulation on shared links, so every previously shared URL keeps resolving. | Amplify console | **No** |
 | **AWS Lambda** | `silver-group-ownerrez-proxy`, Node 20.x/22.x, arm64, Function URL (auth `NONE`), payload v2.0 | The only backend the SPA talks to. `lambda/handler.mjs` is the repo source of truth and is **untouched**. | `lambda/handler.mjs` + console | **No** |
 | **AWS Secrets Manager** | Secret `silver-group/ownerrez` → `{ OWNERREZ_USERNAME, OWNERREZ_PAT }`, read once per cold start | Supplies OwnerRez Basic-auth credentials. Never reaches the browser. | AWS console | **No** |
 | **AWS IAM** | Lambda execution role with `secretsmanager:GetSecretValue` on that secret ARN | Required for the above. | AWS console | **No** |
@@ -235,6 +235,44 @@ app renders at `/`, those must be stripped from the address bar on load, before 
 `history.replaceState`. Preserved.
 
 ---
+
+## 4.7 As-built values (verified in the account, us-east-2)
+
+Discovered by read-only inspection of AWS account `797416043142`. Earlier revisions of this
+document used the *intended* names from DEPLOY.md; these are the real ones.
+
+| Resource | Actual value |
+|---|---|
+| Amplify app | `d3il76884xzdca` — "silver-group", `d3il76884xzdca.amplifyapp.com` |
+| Amplify branches | `main` (PRODUCTION, auto-build), `widget` (orphaned after the repo change) |
+| Amplify repository | `thesilvergrp/sgrweekly` (was `jigieobo/silver-group` until 2026-08-20) |
+| Amplify rewrites | `/api/<*>` → Function URL (200); `/<*>` → `/index.html` (404-200) |
+| Amplify build env vars | none set |
+| Lambda | `silver-group-ownerrez-proxy`, **nodejs24.x**, x86_64, **timeout 3 s**, 128 MB |
+| Lambda role | `arn:aws:iam::797416043142:role/service-role/silver-group-ownerrez-proxy-role-l1eipe59` |
+| Lambda env vars | none — credentials come from Secrets Manager |
+| Function URL | `https://kccs457g6hl43uwsin4m4rtr5m0uuukc.lambda-url.us-east-2.on.aws/`, auth `NONE` |
+| Secret | `silver-group/ownerrez` |
+| S3 | `silvergroup-logo` only |
+| Cognito | no user pools |
+
+### Two findings worth acting on
+
+**The deployed Lambda is behind `lambda/handler.mjs`.** The deployed package was downloaded and
+diffed against the repo copy as it stood before the content work. The deployed version is missing:
+
+* the `/api/properties/{id}/pricing` route **entirely** — it 404s today;
+* `OR_BASE_V1`, so there is no v1 API base for pricing to use;
+* `offset`/`limit` forwarding on `/bookings`, so pagination has never worked.
+
+Deployed routes are only `health`, `properties`, `properties/{id}`, `bookings`, `quotes` and
+`inquiries`. The frontend degrades cleanly for all of this — rates are hidden when pricing is
+unavailable, and the bookings client detects an ignored `offset` and stops after one page — but
+deploying the updated handler picks up these fixes along with the content routes.
+
+**Timeout is 3 seconds** (the Lambda default). That is tight for a Secrets Manager cold start plus
+an OwnerRez round trip, and the content routes add S3 on top. Raising it to 10–15 s costs nothing
+(Lambda bills on duration used, not the ceiling).
 
 ## 5. Environment-variable contract
 

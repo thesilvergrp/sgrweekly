@@ -5,10 +5,11 @@ import { STAY_PARAM, homeUrl, readStayParam, relativeStayUrl } from '../lib/url'
  * The app's routing contract, preserved from the deployed site: a stay is
  * addressed by `?property=<slug|id>` on `/`.
  *
- * Why a query parameter and not a path: Amplify Hosting has no SPA fallback
- * rewrite configured, so only `/` is guaranteed to serve index.html. Moving to
- * `/stays/<slug>` would require adding a `/<*> → /index.html` rewrite — an
- * infrastructure change, and out of scope (see docs/api-inventory.md §4).
+ * Why a query parameter and not a path: `?property=` is the parameter already
+ * in circulation on links guests have shared, so keeping it means every URL out
+ * there still resolves. (Amplify does have a `/<*>` → `/index.html` 404-200
+ * fallback, so path routing would work — it just would not be worth breaking
+ * existing links for.)
  *
  * What changed: the previous implementation read the parameter once and then
  * deleted it, so the detail view had no address and Back skipped it. Here the
