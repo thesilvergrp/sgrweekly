@@ -114,6 +114,39 @@ export function StaysPanel({ document, stays, onChange }: StaysPanelProps) {
             </Checkbox>
           </div>
 
+          <div className={styles.group}>
+            <p className={styles.groupTitle}>Terms for this property</p>
+            <p className={styles.panelHint}>
+              Leave the cancellation box empty to use the site-wide wording from “Stay terms”.
+            </p>
+            <TextBlock
+              label="Cancellation policy"
+              rows={3}
+              required={false}
+              value={entry.cancellationPolicy ?? ''}
+              onChange={(cancellationPolicy) => patch({ cancellationPolicy })}
+            />
+            <Checkbox
+              checked={entry.petsAllowed ?? false}
+              onChange={(event) => patch({ petsAllowed: event.target.checked })}
+            >
+              Pets are welcome at this property
+            </Checkbox>
+            {(entry.petsAllowed ?? false) && (
+              <Field label="Maximum pets">
+                {(props) => (
+                  <TextInput
+                    {...props}
+                    type="number"
+                    min={1}
+                    value={String(entry.maxPets ?? 2)}
+                    onChange={(event) => patch({ maxPets: Number(event.target.value) })}
+                  />
+                )}
+              </Field>
+            )}
+          </div>
+
           <StringListEditor
             label="Amenities"
             hint="Names match the OwnerRez amenity vocabulary, which is what picks the icon."

@@ -10,6 +10,7 @@ import { AboutSection } from '../features/home/AboutSection';
 import { AmenitiesSection } from '../features/home/AmenitiesSection';
 import { HeroSection } from '../features/home/HeroSection';
 import { ContactSection } from '../features/contact/ContactSection';
+import { AdminBar } from '../features/admin/EditAffordance';
 import { StayPage } from '../features/stay/StayPage';
 import { legacySectionAliases } from '../config/site';
 import { scrollToSection, scrollToTop } from '../lib/scroll';
@@ -145,6 +146,7 @@ function Shell() {
       </main>
 
       <SiteFooter onNavigate={goToSection} />
+      <AdminBar />
     </div>
   );
 }

@@ -1,3 +1,5 @@
+import type { StayDefaults } from './site-content';
+import type { StayEditorial } from './stays-document';
 import type { PolicyGroup, PolicyRule, StayPolicies } from '../types/domain';
 
 /**
@@ -43,19 +45,39 @@ export const MAX_PETS = 2;
 export const MIN_NIGHTS = 7;
 export const NIGHTS_PER_WEEK = 7;
 
-export function resolveStayPolicies(stayId: string, sleeps: number): StayPolicies {
-  const petsAllowed = PET_FRIENDLY_STAY_IDS.has(stayId);
+/**
+ * Resolves the terms shown on a stay page.
+ *
+ * Precedence: the property's own editable values, then the site-wide editable
+ * defaults, then the tables in this file. The tables remain the last resort so
+ * the site still shows correct terms when no content document is reachable.
+ */
+export function resolveStayPolicies(
+  stayId: string,
+  sleeps: number,
+  overrides?: StayEditorial,
+  defaults?: StayDefaults,
+): StayPolicies {
+  const petsAllowed = overrides?.petsAllowed ?? PET_FRIENDLY_STAY_IDS.has(stayId);
+  const maxPets = overrides?.maxPets ?? defaults?.maxPets ?? MAX_PETS;
+  const checkInFrom = defaults?.checkInFrom ?? CHECK_IN_FROM;
+  const checkOutBy = defaults?.checkOutBy ?? CHECK_OUT_BY;
+  const cancellation =
+    overrides?.cancellationPolicy ??
+    CANCELLATION_BY_STAY_ID[stayId] ??
+    defaults?.cancellationPolicy ??
+    CANCELLATION.days30;
 
   const children: PolicyRule = { label: 'Children (2–12) welcome', tone: 'allowed' };
   const infants: PolicyRule = { label: 'Infants under 2 welcome', tone: 'allowed' };
   const capacity: PolicyRule = { label: `Sleeps up to ${sleeps} guests`, tone: 'capacity' };
   const pets: PolicyRule = petsAllowed
-    ? { label: `Up to ${MAX_PETS} pets welcome`, tone: 'allowed' }
+    ? { label: `Up to ${maxPets} pets welcome`, tone: 'allowed' }
     : { label: 'No pets', tone: 'not-allowed' };
   const events: PolicyRule = { label: 'No parties or events', tone: 'not-allowed' };
   const smoking: PolicyRule = { label: 'No smoking indoors', tone: 'not-allowed' };
-  const arrive: PolicyRule = { label: `Check in from ${CHECK_IN_FROM}`, tone: 'timing' };
-  const depart: PolicyRule = { label: `Check out by ${CHECK_OUT_BY}`, tone: 'timing' };
+  const arrive: PolicyRule = { label: `Check in from ${checkInFrom}`, tone: 'timing' };
+  const depart: PolicyRule = { label: `Check out by ${checkOutBy}`, tone: 'timing' };
 
   const houseRules: PolicyGroup[] = [
     { title: 'Who can stay', rules: [capacity, children, infants] },
@@ -66,11 +88,11 @@ export function resolveStayPolicies(stayId: string, sleeps: number): StayPolicie
   ];
 
   return {
-    cancellation: CANCELLATION_BY_STAY_ID[stayId] ?? CANCELLATION.days30,
+    cancellation,
     petsAllowed,
-    maxPets: MAX_PETS,
-    checkInFrom: CHECK_IN_FROM,
-    checkOutBy: CHECK_OUT_BY,
+    maxPets,
+    checkInFrom,
+    checkOutBy,
     houseRules,
     headline: [capacity, pets, events, smoking],
     safety: [

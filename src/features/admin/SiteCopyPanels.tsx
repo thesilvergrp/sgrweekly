@@ -8,6 +8,7 @@ import type {
   SectionIntro,
   SiteContentDocument,
   SiteMeta,
+  StayDefaults,
 } from '../../content/site-content';
 import type { Stay } from '../../types/domain';
 import { Checkbox } from '../../components/ui/Field';
@@ -224,6 +225,27 @@ export function FooterPanel({ value, patch }: { value: FooterContent; patch: Pat
         <TextRow label="Contact column title" value={value.contactTitle} onChange={(contactTitle) => set({ contactTitle })} />
       </div>
       <TextRow label="Areas column title" value={value.areasTitle} onChange={(areasTitle) => set({ areasTitle })} />
+    </div>
+  );
+}
+
+export function StayTermsPanel({ value, patch }: { value: StayDefaults; patch: Patch }) {
+  const set = (next: Partial<StayDefaults>) => patch({ stayDefaults: { ...value, ...next } });
+  return (
+    <div className={styles.group}>
+      <p className={styles.groupTitle}>Applies to every property</p>
+      <p className={styles.panelHint}>
+        A property can override its cancellation wording and pet rules under “Property text”.
+      </p>
+      <div className={styles.grid2}>
+        <TextRow label="Check in from" value={value.checkInFrom} onChange={(checkInFrom) => set({ checkInFrom })} />
+        <TextRow label="Check out by" value={value.checkOutBy} onChange={(checkOutBy) => set({ checkOutBy })} />
+      </div>
+      <TextBlock
+        label="Default cancellation policy"
+        value={value.cancellationPolicy}
+        onChange={(cancellationPolicy) => set({ cancellationPolicy })}
+      />
     </div>
   );
 }

@@ -29,6 +29,13 @@ export interface StayEditorial {
   bedCount?: number;
   /** Only used when OwnerRez has no living_area for the property. */
   areaSqFt?: number | null;
+
+  /** Cancellation terms for this stay. Falls back to the site-wide default. */
+  cancellationPolicy?: string;
+  /** Whether this stay accepts pets. Drives the pet stepper on the booking panel. */
+  petsAllowed?: boolean;
+  /** Ceiling for the pet stepper when pets are allowed. */
+  maxPets?: number;
 }
 
 export interface StaysContentDocument {

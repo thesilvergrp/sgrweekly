@@ -3,6 +3,7 @@ import { Icon } from '../../components/icons';
 import { Button, LinkButton } from '../../components/ui/Button';
 import { Checkbox, Field, SelectInput, TextArea, TextInput } from '../../components/ui/Field';
 import { Notice } from '../../components/ui/Notice';
+import { EditThis } from '../admin/EditAffordance';
 import { SectionHeading } from '../../components/ui/SectionHeading';
 import { useSiteContent } from '../../app/content-context';
 import { StayMap } from '../map/StayMap';
@@ -78,6 +79,7 @@ export function ContactSection({ stays }: ContactSectionProps) {
     <section className={styles.section} id="contact" aria-labelledby="contact-title">
       <div className="u-container">
         <SectionHeading
+          action={<EditThis panel="contact" />}
           index={contact.index}
           overline={contact.overline}
           title={contact.title}

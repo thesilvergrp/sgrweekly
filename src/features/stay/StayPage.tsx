@@ -3,6 +3,7 @@ import { Icon } from '../../components/icons';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { useToast } from '../../components/ui/toast-context';
+import { useSiteContent, useStaysContent } from '../../app/content-context';
 import { resolveStayPolicies } from '../../content/policies';
 import { EnquiryDialog } from '../booking/EnquiryDialog';
 import { ReservationHandoffDialog } from '../booking/ReservationHandoffDialog';
@@ -17,6 +18,7 @@ import { shareStay } from '../../lib/share';
 import { today } from '../../lib/dates';
 import type { Stay } from '../../types/domain';
 import { cx } from '../../lib/cx';
+import { EditThis } from '../admin/EditAffordance';
 import { StayGallery } from './StayGallery';
 import { StayPoliciesPanel } from './StayPolicies';
 import styles from './StayPage.module.css';
@@ -32,9 +34,11 @@ interface StayPageProps {
  * interaction is behind a hook in features/booking.
  */
 export function StayPage({ stay, onBack }: StayPageProps) {
+  const { stayDefaults } = useSiteContent();
+  const editorial = useStaysContent().stays[stay.id];
   const policies = useMemo(
-    () => resolveStayPolicies(stay.id, stay.capacity.sleeps),
-    [stay.id, stay.capacity.sleeps],
+    () => resolveStayPolicies(stay.id, stay.capacity.sleeps, editorial, stayDefaults),
+    [stay.id, stay.capacity.sleeps, editorial, stayDefaults],
   );
 
   const availability = useStayAvailability(stay.id);
@@ -96,7 +100,10 @@ export function StayPage({ stay, onBack }: StayPageProps) {
               <Icon name="pin" size={13} />
               {stay.address.locality}
             </p>
-            <h1 className={styles.name}>{stay.name}</h1>
+            <h1 className={styles.name}>
+              {stay.name}
+              <EditThis panel="stays" label="Edit this property" />
+            </h1>
             <dl className={styles.facts}>
               <div className={styles.fact}>
                 <Icon name="bed" size={16} />

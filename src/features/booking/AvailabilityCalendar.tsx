@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { MonthGrid, type DayPresentation } from '../../components/calendar/MonthGrid';
 import { Icon } from '../../components/icons';
 import { Skeleton } from '../../components/ui/Skeleton';
-import { useIsDesktop } from '../../hooks/useMediaQuery';
 import type { AvailabilityIndex } from '../../lib/availability';
 import { addMonths, daysBetween, firstOfMonth, isSameDay, today } from '../../lib/dates';
 import { formatDateWithWeekday, formatMonth, formatMoney } from '../../lib/format';
@@ -43,7 +42,6 @@ export function AvailabilityCalendar({
   const [visibleMonth, setVisibleMonth] = useState(() =>
     firstOfMonth(arrival ?? today()),
   );
-  const twoUp = useIsDesktop();
 
   const departure = arrival && weeks > 0 ? departureFor(arrival, weeks) : null;
   const atStart = visibleMonth <= startMonth;
@@ -111,9 +109,7 @@ export function AvailabilityCalendar({
           <Icon name="chevronLeft" size={18} />
         </button>
         <span className={styles.navLabel} aria-live="polite">
-          {twoUp
-            ? `${formatMonth(visibleMonth)} — ${formatMonth(addMonths(visibleMonth, 1))}`
-            : formatMonth(visibleMonth)}
+          {formatMonth(visibleMonth)}
         </span>
         <button
           type="button"
@@ -125,15 +121,8 @@ export function AvailabilityCalendar({
         </button>
       </div>
 
-      <div className={`${styles.months} ${twoUp ? styles.twoUp : ''}`}>
+      <div className={styles.months}>
         <MonthGrid month={visibleMonth} describeDay={describeDay} onSelect={onSelectArrival} />
-        {twoUp && (
-          <MonthGrid
-            month={addMonths(visibleMonth, 1)}
-            describeDay={describeDay}
-            onSelect={onSelectArrival}
-          />
-        )}
       </div>
 
       <p className={styles.status} aria-live="polite">

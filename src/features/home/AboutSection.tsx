@@ -1,5 +1,6 @@
 import { useSiteContent } from '../../app/content-context';
 import { Icon, toIconName } from '../../components/icons';
+import { EditThis } from '../admin/EditAffordance';
 import { SectionHeading } from '../../components/ui/SectionHeading';
 import { useInView } from '../../hooks/useInView';
 import styles from './AboutSection.module.css';
@@ -12,6 +13,7 @@ export function AboutSection() {
     <section className={styles.section} id="about" aria-labelledby="about-title">
       <div className="u-container">
         <SectionHeading
+          action={<EditThis panel="about" />}
           index={about.index}
           overline={about.overline}
           title={about.title}

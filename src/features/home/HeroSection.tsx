@@ -1,4 +1,5 @@
 import { useSiteContent } from '../../app/content-context';
+import { EditThis } from '../admin/EditAffordance';
 import { StayFinder } from '../search/StayFinder';
 import type { Stay } from '../../types/domain';
 import styles from './HeroSection.module.css';
@@ -33,6 +34,7 @@ export function HeroSection({ stays, featured, onOpenStay, onBrowse }: HeroSecti
           <p className={styles.overline}>
             <span className={styles.rule} aria-hidden="true" />
             {hero.overline}
+            <EditThis panel="hero" />
           </p>
 
           <h1 className={styles.headline}>

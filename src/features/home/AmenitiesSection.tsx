@@ -1,5 +1,6 @@
 import { useSiteContent } from '../../app/content-context';
 import { Icon, toIconName } from '../../components/icons';
+import { EditThis } from '../admin/EditAffordance';
 import { SectionHeading } from '../../components/ui/SectionHeading';
 import { useInView } from '../../hooks/useInView';
 import styles from './AmenitiesSection.module.css';
@@ -12,6 +13,7 @@ export function AmenitiesSection() {
     <section className={styles.section} id="amenities" aria-labelledby="amenities-title">
       <div className="u-container">
         <SectionHeading
+          action={<EditThis panel="amenities" />}
           index={amenities.index}
           overline={amenities.overline}
           title={amenities.title}

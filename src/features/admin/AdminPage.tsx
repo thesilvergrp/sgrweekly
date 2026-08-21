@@ -24,6 +24,7 @@ import {
   FooterPanel,
   HeroPanel,
   MetaPanel,
+  StayTermsPanel,
 } from './SiteCopyPanels';
 import { StaysPanel } from './StaysPanel';
 import styles from './Admin.module.css';
@@ -38,7 +39,8 @@ type PanelId =
   | 'contact'
   | 'footer'
   | 'curation'
-  | 'stays';
+  | 'stays'
+  | 'terms';
 
 const PANELS: { id: PanelId; label: string; hint: string }[] = [
   { id: 'hero', label: 'Hero', hint: 'The first thing anyone reads.' },
@@ -48,6 +50,7 @@ const PANELS: { id: PanelId; label: string; hint: string }[] = [
   { id: 'contact', label: 'Contact', hint: 'The enquiry section.' },
   { id: 'footer', label: 'Footer', hint: 'Blurb and column headings.' },
   { id: 'curation', label: 'Published homes', hint: 'Which properties the site shows at all.' },
+  { id: 'terms', label: 'Stay terms', hint: 'Check-in times, cancellation, pets.' },
   { id: 'stays', label: 'Property text', hint: 'Descriptions, amenities and photos. Includes unpublished properties, so you can write copy before putting one live.' },
   { id: 'business', label: 'Business details', hint: 'Phone, email, areas — used across the site.' },
   { id: 'meta', label: 'Page title', hint: 'Browser tab and description.' },
@@ -71,7 +74,12 @@ export default function AdminPage({ stays, onExit }: AdminPageProps) {
   const publishedStays = useStaysContent();
   const { sources, refresh } = useContentControls();
 
-  const [panel, setPanel] = useState<PanelId>('hero');
+  // Honour ?panel= so the in-page "Edit" chips land on the right section
+  // instead of dropping the editor at the top every time.
+  const [panel, setPanel] = useState<PanelId>(() => {
+    const requested = new URLSearchParams(window.location.search).get('panel');
+    return PANELS.some((item) => item.id === requested) ? (requested as PanelId) : 'hero';
+  });
   const [siteDraft, setSiteDraft] = useState<SiteContentDocument>(publishedSite);
   // Seeded from the ADMIN read, which includes unpublished properties. The
   // context copy is the trimmed public one; publishing from that would erase
@@ -241,6 +249,7 @@ export default function AdminPage({ stays, onExit }: AdminPageProps) {
           {panel === 'about' && <AboutPanel value={siteDraft.about} patch={patchSite} />}
           {panel === 'contact' && <ContactPanel value={siteDraft.contact} patch={patchSite} />}
           {panel === 'footer' && <FooterPanel value={siteDraft.footer} patch={patchSite} />}
+          {panel === 'terms' && <StayTermsPanel value={siteDraft.stayDefaults} patch={patchSite} />}
           {panel === 'curation' && (
             <CurationPanel featuredStayIds={siteDraft.featuredStayIds} stays={stays} patch={patchSite} />
           )}

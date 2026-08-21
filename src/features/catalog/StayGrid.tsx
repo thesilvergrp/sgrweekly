@@ -2,6 +2,7 @@ import { useSiteContent } from '../../app/content-context';
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Notice } from '../../components/ui/Notice';
+import { EditThis } from '../admin/EditAffordance';
 import { SectionHeading } from '../../components/ui/SectionHeading';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { describeError } from '../../lib/errors';
@@ -37,6 +38,7 @@ export function StayGrid({
     <section className={styles.section} id="stays" aria-labelledby="stays-title">
       <div className="u-container">
         <SectionHeading
+          action={<EditThis panel="collection" />}
           index={collection.index}
           overline={collection.overline}
           title={collection.title}

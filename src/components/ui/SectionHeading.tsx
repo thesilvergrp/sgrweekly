@@ -10,6 +10,8 @@ interface SectionHeadingProps {
   lede?: ReactNode;
   /** Optional trailing content, e.g. a link or a count. */
   aside?: ReactNode;
+  /** Rendered next to the title — used for the admin "Edit" chip. */
+  action?: ReactNode;
   id?: string;
   className?: string;
   as?: 'h2' | 'h3';
@@ -21,6 +23,7 @@ export function SectionHeading({
   title,
   lede,
   aside,
+  action,
   id,
   className,
   as: Tag = 'h2',
@@ -32,6 +35,7 @@ export function SectionHeading({
         {overline && <span className={styles.overline}>{overline}</span>}
         <Tag className={styles.title} id={id}>
           {title}
+          {action}
         </Tag>
         {lede && <p className={styles.lede}>{lede}</p>}
       </div>

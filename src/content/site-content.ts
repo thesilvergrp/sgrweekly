@@ -78,6 +78,14 @@ export interface ContactContent extends SectionIntro {
   smallprint: string;
 }
 
+/** Terms that apply to every stay unless a property overrides them. */
+export interface StayDefaults {
+  checkInFrom: string;
+  checkOutBy: string;
+  cancellationPolicy: string;
+  maxPets: number;
+}
+
 export interface FooterContent {
   blurb: string;
   exploreTitle: string;
@@ -98,6 +106,7 @@ export interface SiteContentDocument {
   about: AboutContent;
   contact: ContactContent;
   footer: FooterContent;
+  stayDefaults: StayDefaults;
   /**
    * The properties PUBLISHED on the site, by OwnerRez id.
    *
@@ -231,6 +240,14 @@ export const defaultSiteContent: SiteContentDocument = {
   },
 
   // The six published properties. Add an id here to put a property on the site.
+  stayDefaults: {
+    checkInFrom: '4:00 PM',
+    checkOutBy: '11:00 AM',
+    cancellationPolicy:
+      'Full refund for cancellations made at least 30 days before arrival. No refund inside 30 days.',
+    maxPets: 2,
+  },
+
   featuredStayIds: [
     '478121', // The Silver Suite I
     '476709', // The Silver Studio II

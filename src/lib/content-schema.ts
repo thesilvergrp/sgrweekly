@@ -9,6 +9,7 @@ import type {
   SectionIntro,
   SiteContentDocument,
   SiteMeta,
+  StayDefaults,
 } from '../content/site-content';
 import {
   STAYS_CONTENT_VERSION,
@@ -188,6 +189,19 @@ function footer(value: unknown, fallback: FooterContent): FooterContent {
   };
 }
 
+function stayDefaults(value: unknown, fallback: StayDefaults): StayDefaults {
+  const raw = asObject(value);
+  const maxPets = typeof raw.maxPets === 'number' && Number.isFinite(raw.maxPets)
+    ? Math.max(0, Math.round(raw.maxPets))
+    : fallback.maxPets;
+  return {
+    checkInFrom: str(raw.checkInFrom, fallback.checkInFrom),
+    checkOutBy: str(raw.checkOutBy, fallback.checkOutBy),
+    cancellationPolicy: str(raw.cancellationPolicy, fallback.cancellationPolicy),
+    maxPets,
+  };
+}
+
 /** Ids must be numeric OwnerRez ids; an empty result falls back to the default. */
 function stayIds(value: unknown, fallback: string[]): string[] {
   const cleaned = strList(value, fallback).filter((id) => /^\d+$/.test(id));
@@ -216,6 +230,7 @@ export function parseSiteContent(
     about: about(document.about, fallback.about),
     contact: contact(document.contact, fallback.contact),
     footer: footer(document.footer, fallback.footer),
+    stayDefaults: stayDefaults(document.stayDefaults, fallback.stayDefaults),
     featuredStayIds: stayIds(document.featuredStayIds, fallback.featuredStayIds),
   };
 }
@@ -238,6 +253,9 @@ function stayEditorial(value: unknown): StayEditorial | null {
     spotlight: typeof item.spotlight === 'boolean' ? item.spotlight : undefined,
     bedCount: optionalCount(item.bedCount),
     areaSqFt: item.areaSqFt === null ? null : optionalCount(item.areaSqFt),
+    cancellationPolicy: optionalStr(item.cancellationPolicy),
+    petsAllowed: typeof item.petsAllowed === 'boolean' ? item.petsAllowed : undefined,
+    maxPets: optionalCount(item.maxPets),
   };
   return Object.values(override).some((field) => field !== undefined) ? override : null;
 }

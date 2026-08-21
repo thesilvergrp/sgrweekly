@@ -42,12 +42,6 @@
   gap: var(--space-7);
 }
 
-@media (min-width: 640px) {
-  .twoUp {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 .legend {
   display: flex;
   flex-wrap: wrap;
