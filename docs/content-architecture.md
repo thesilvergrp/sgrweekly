@@ -3,8 +3,8 @@
 Goal: let an operator change page copy, business details, which homes are featured, and per-property
 editorial text **without a developer and without a code change**.
 
-Status: **all the code is written and verified.** What remains is AWS setup, which is deliberately
-left to you — no resource has been created, changed or deployed. Follow the runbook in §5.
+Status: **built and deployed.** The AWS resources were created on 2026-08-20 and the editor is live.
+§5 records what was provisioned and the exact identifiers.
 
 Chosen design: **S3 content store, read through the existing Lambda, edited through an admin page in
 the app behind Cognito sign-in, with per-stay editorial text included.**
@@ -224,103 +224,55 @@ Lambda side:
 | `COGNITO_CLIENT_ID` | writes | same app client id as above |
 | `COGNITO_ADMIN_GROUP` | optional | e.g. `content-admins` |
 
-## 5. AWS setup runbook — none of this has been done
+## 5. As deployed (account 797416043142, us-east-2)
 
-Nothing below has been executed. No resource was created, modified or deleted, and nothing was
-deployed. Each step is yours; the code is already written and tested against it.
+| Resource | Value |
+|---|---|
+| Content bucket | `silvergroup-content` — versioning **on**, public access **fully blocked**, SSE-AES256 |
+| Documents | `site/site.json` (~4 KB), `site/stays.json` (~47 KB, 19 properties) |
+| Lambda role policy | inline `silver-group-content-store` → `s3:GetObject`, `s3:PutObject` on `arn:aws:s3:::silvergroup-content/site/*` |
+| Lambda env | `CONTENT_BUCKET`, `COGNITO_USER_POOL_ID`, `COGNITO_CLIENT_ID`, `COGNITO_ADMIN_GROUP` |
+| Lambda limits | timeout raised **3 s → 15 s**, memory **128 → 256 MB** |
+| Cognito user pool | `us-east-2_nOhDtLRyK` — "silver-group-admin", email sign-in, self-registration disabled, 12-char password minimum |
+| App client | `ab9fi4672rm0ep4d24hs9qufg` — **public, no secret**, authorization-code grant only, scopes `openid email`, ID token 1 h |
+| Hosted UI | `https://sgrweekly-admin.auth.us-east-2.amazoncognito.com` |
+| Callback / logout URLs | `https://sgrweekly.net/`, `https://www.sgrweekly.net/`, `https://main.d3il76884xzdca.amplifyapp.com/`, `http://localhost:5173/` |
+| Admin group | `content-admins` |
+| Amplify build env | `VITE_COGNITO_DOMAIN`, `VITE_COGNITO_CLIENT_ID` |
 
-### 5.1 Create the content bucket
+The four callback URLs matter: the app derives its redirect from `window.location.origin` plus a
+trailing slash, so each origin the site is reachable on must be registered verbatim. The localhost
+entry lets the editor be exercised against real Cognito during development.
 
-1. **S3 → Create bucket**, e.g. `silvergroup-content`, same region as the Lambda.
-2. **Block all public access: ON.** Reads go through the Lambda, so the bucket stays private.
-3. **Bucket Versioning: Enable.** This is the rollback and audit trail — every publish keeps the
-   previous document, recoverable with `aws s3api list-object-versions`.
-
-### 5.2 Seed the documents
+### Adding another editor
 
 ```bash
-npm run --silent content:export        > site.json     # ~4 KB
-npm run --silent content:export stays  > stays.json    # ~47 KB
+aws cognito-idp admin-create-user --region us-east-2 \
+  --user-pool-id us-east-2_nOhDtLRyK --username person@example.com \
+  --user-attributes Name=email,Value=person@example.com Name=email_verified,Value=true \
+  --desired-delivery-mediums EMAIL
 
-aws s3 cp site.json  s3://silvergroup-content/site/site.json  --content-type application/json
-aws s3 cp stays.json s3://silvergroup-content/site/stays.json --content-type application/json
+aws cognito-idp admin-add-user-to-group --region us-east-2 \
+  --user-pool-id us-east-2_nOhDtLRyK --username person@example.com --group-name content-admins
 ```
 
-Both are exported from the copy currently built into the site, so publishing changes nothing on day
-one — it just moves the source of truth.
+Without the group membership the sign-in succeeds but every publish is refused with 403 — the
+Lambda checks `cognito:groups` on the ID token.
 
-### 5.3 Let the Lambda read and write them
+### Rolling back a bad publish
 
-**Lambda → Configuration → Permissions → execution role → Add permissions → Create inline policy:**
+The bucket is versioned, so every publish keeps its predecessor:
 
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Action": ["s3:GetObject", "s3:PutObject"],
-    "Resource": "arn:aws:s3:::silvergroup-content/site/*"
-  }]
-}
+```bash
+aws s3api list-object-versions --bucket silvergroup-content --prefix site/site.json \
+  --query 'Versions[].[LastModified,VersionId]' --output table
+
+aws s3api copy-object --bucket silvergroup-content --key site/site.json \
+  --copy-source 'silvergroup-content/site/site.json?versionId=<PREVIOUS_VERSION_ID>'
 ```
 
-Scoped to one prefix in one bucket. It does not touch the existing Secrets Manager grant.
-
-**Lambda → Configuration → Environment variables:** add `CONTENT_BUCKET=silvergroup-content`.
-
-### 5.4 Create the Cognito user pool
-
-This is the one genuinely new piece of infrastructure, and the only step that adds an auth surface.
-
-1. **Cognito → Create user pool.** Sign-in with **Email**. Self-registration **disabled** — you
-   create the accounts. MFA optional but recommended for an account that can edit the live site.
-2. **App client:** *Public client*, **no client secret** (a browser cannot keep one).
-   * Allowed callback URL: `https://<your-domain>/` — the trailing slash matters, it must match
-     `VITE_COGNITO_DOMAIN`'s redirect exactly.
-   * Allowed sign-out URL: `https://<your-domain>/`
-   * OAuth grant: **Authorization code grant** only. Do **not** enable implicit.
-   * Scopes: `openid`, `email`.
-3. **Hosted UI domain:** set a Cognito domain prefix and note the full URL.
-4. **Group** (optional but recommended): create `content-admins` and add your admin user to it.
-5. **Create the admin user(s)** and set a permanent password.
-
-Then add to the Lambda: `COGNITO_USER_POOL_ID`, `COGNITO_CLIENT_ID`, and
-`COGNITO_ADMIN_GROUP=content-admins` if you made the group.
-
-### 5.5 Deploy the Lambda
-
-`lambda/handler.mjs` in this repo is the source of truth and now contains the content routes. Per
-DEPLOY.md, paste it into the console as `index.mjs` and **Deploy**. Amplify only builds the frontend,
-so this step is manual and is yours.
-
-The new routes are additive: `/api/health`, `/api/properties*`, `/api/inquiries` behave identically,
-which is covered by tests (§6). To roll back, re-paste the previous file — kept at
-`git show HEAD:lambda/handler.mjs` if you version it, or from the console's previous version.
-
-### 5.6 Turn on the editor in Amplify
-
-**Amplify → Hosting → Environment variables:** add `VITE_COGNITO_DOMAIN` and
-`VITE_COGNITO_CLIENT_ID`, then redeploy. Until then `?admin` politely reports that editing is not
-configured, which is a reasonable state to leave a production branch in if you would rather run the
-editor from a protected branch only.
-
-### 5.7 Summary of changes
-
-| # | Change | Existing resource affected? |
-|---|---|---|
-| 1 | New S3 bucket, versioned, private | No |
-| 2 | Two objects seeded into it | No |
-| 3 | Inline IAM policy on the Lambda role, one prefix | Additive statement only |
-| 4 | `CONTENT_BUCKET` env var on the Lambda | Additive |
-| 5 | New Cognito user pool + app client + admin user | No — nothing else uses Cognito |
-| 6 | Three Cognito env vars on the Lambda | Additive |
-| 7 | Redeploy `handler.mjs` | New routes only; existing routes verified unchanged |
-| 8 | Two Amplify build env vars | Additive |
-
-The OwnerRez secret, the Function URL, the Amplify `/api/*` rewrite and the build spec are all
-untouched. The one existing line that did change is the Lambda's CORS header, which now also allows
-`PUT` and `Authorization` — it only applies when the Function URL is called directly, since
-production traffic is same-origin through the rewrite.
+Changes appear within the 60-second cache window. Worst case, deleting the object entirely makes the
+site fall back to the copy built into the bundle.
 
 ## 6. Verification
 
