@@ -309,10 +309,44 @@ between them is a context provider passing a value through.
    seed, not a mirror. Re-running `npm run content:export` after major edits and committing the
    result keeps the offline fallback current — worth doing occasionally, not per edit.
 
-## 8. Where this leaves SES
+## 8. Contact form (SES) — built and deployed
 
-The contact form still composes a `mailto:` and says so. When you wire SES, the shape is the same as
-the content write path: a new route on the same Lambda, `POST /api/contact`, with SES send
-permission on the execution role and a verified sender identity. The frontend change is one service
-function plus swapping the form's submit handler — the form, its validation and its states are
-already built.
+`POST /api/contact` on the same Lambda relays the general contact form through SES.
+
+| Piece | Detail |
+|---|---|
+| Sending identity | `sgrweekly.net` — domain identity, **DKIM verified**, records published to Route53 zone `Z03478791LODU0XHLUWE9` |
+| From | `Silver Group Rentals <no-reply@sgrweekly.net>` (`CONTACT_FROM`) |
+| To | `Bookings@silvergrouprentals.com` (`CONTACT_TO`) |
+| Reply-To | the sender's own address, so replying in the mail client reaches the guest |
+| IAM | inline `silver-group-contact-ses` → `ses:SendEmail` on the two identity ARNs only |
+
+SES v2 checks `ses:SendEmail` against **both** the sending identity and, in sandbox, the recipient
+identity — a policy naming only the domain fails with an authorization error on the destination.
+Both ARNs are listed.
+
+### Abuse controls
+
+The route is public and unauthenticated, so:
+
+* **Honeypot** — a `company` field, off-screen and `aria-hidden`, that no human fills. Anything with
+  a value is dropped and still answered `200`, so a scraper gets no signal to adapt to.
+* **Per-container rate limit** — `CONTACT_MAX_PER_WINDOW` (default 5) per 60 s. This blunts a naive
+  script, not a distributed one; Lambda scales out and each container has its own counter.
+* **Length caps and CR/LF stripping** on every header-bound field, so a message cannot forge headers.
+* **Field validation** mirrored client-side and enforced server-side.
+
+The real ceiling is SES's own quota. If abuse ever appears, the proportionate next step is WAF or a
+challenge in front of the route rather than more logic in the handler.
+
+### Sandbox
+
+The account is in the **SES sandbox** (200 messages/day, 1/sec). That is sufficient for this use —
+the form only ever emails the business — but it requires the **destination address to be a verified
+identity**. `Bookings@silvergrouprentals.com` has been created as an identity and a verification
+email sent; until somebody clicks that link, sends fail with *"Email address is not verified"* and
+the form shows its `mailto:` fallback.
+
+Request production access only if you later want to email *guests* — an auto-acknowledgement, say.
+That is a support request (SES console → Account dashboard → Request production access) describing
+the use case, and it should be filed by you rather than on your behalf.
