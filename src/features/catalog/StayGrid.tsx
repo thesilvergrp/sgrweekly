@@ -11,7 +11,6 @@ import styles from './StayGrid.module.css';
 
 interface StayGridProps {
   stays: Stay[];
-  totalInCatalog: number;
   isLoading: boolean;
   error: unknown;
   proxyReachable: boolean | null;
@@ -25,7 +24,6 @@ interface StayGridProps {
  */
 export function StayGrid({
   stays,
-  totalInCatalog,
   isLoading,
   error,
   proxyReachable,
@@ -94,12 +92,6 @@ export function StayGrid({
           </ul>
         )}
 
-        {totalInCatalog > stays.length && (
-          <p className={styles.footNote}>
-            Showing {stays.length} of {totalInCatalog} homes. Search by name above to see the rest of
-            the portfolio.
-          </p>
-        )}
       </div>
     </section>
   );

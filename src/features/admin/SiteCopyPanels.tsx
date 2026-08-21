@@ -246,10 +246,12 @@ export function CurationPanel({
 
   return (
     <div className={styles.group}>
-      <p className={styles.groupTitle}>Homes shown on the home page</p>
+      <p className={styles.groupTitle}>Homes published on the site</p>
       <p className={styles.panelHint}>
-        Every active property stays searchable regardless — this only controls the grid. Unticking
-        everything is ignored when the document is read, so the grid can never end up empty.
+        This is the whole of what the public site shows. An unticked property is invisible — not in
+        the grid, not in search, not reachable from a shared link, not on the map — even though it
+        stays active in OwnerRez. Unticking everything is ignored when the document is read, so the
+        site can never end up with nothing on it.
       </p>
       {stays.map((stay) => (
         <Checkbox

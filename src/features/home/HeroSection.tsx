@@ -4,9 +4,9 @@ import type { Stay } from '../../types/domain';
 import styles from './HeroSection.module.css';
 
 interface HeroSectionProps {
-  /** Whole catalog — the finder searches everything, not just the grid. */
+  /** The published catalog — the finder searches exactly what is on the site. */
   stays: Stay[];
-  /** Curated homes, used for the photo mosaic. */
+  /** Same set, used for the photo mosaic. */
   featured: Stay[];
   onOpenStay: (stay: Stay) => void;
   onBrowse: () => void;

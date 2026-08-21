@@ -98,7 +98,15 @@ export interface SiteContentDocument {
   about: AboutContent;
   contact: ContactContent;
   footer: FooterContent;
-  /** OwnerRez ids shown in the home-page grid, in no particular order. */
+  /**
+   * The properties PUBLISHED on the site, by OwnerRez id.
+   *
+   * This is the site's entire visible inventory — not merely what appears in
+   * the home-page grid. Anything absent from this list is invisible to the
+   * public site: it is not in the grid, cannot be found by search, will not
+   * resolve from a ?property= link, and is not plotted on the map. OwnerRez may
+   * hold many more active properties; only these are advertised here.
+   */
   featuredStayIds: string[];
 }
 
@@ -222,6 +230,7 @@ export const defaultSiteContent: SiteContentDocument = {
     areasTitle: 'Where we host',
   },
 
+  // The six published properties. Add an id here to put a property on the site.
   featuredStayIds: [
     '478121', // The Silver Suite I
     '476709', // The Silver Studio II

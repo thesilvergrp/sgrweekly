@@ -14,8 +14,9 @@ interface StayFinderProps {
 const MAX_RESULTS = 6;
 
 /**
- * Type-ahead over the whole catalog — including homes that are not in the
- * curated grid, which is the point of keeping every active property loaded.
+ * Type-ahead over the published catalog. It deliberately sees only what the
+ * content document publishes, so a property that is not on the site cannot be
+ * surfaced by guessing its name.
  *
  * Implemented as an ARIA combobox: ↑/↓ move, Enter opens, Escape closes, and
  * the active option is announced through aria-activedescendant.

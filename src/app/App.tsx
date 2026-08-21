@@ -86,7 +86,7 @@ function Shell() {
     return (
       <Suspense fallback={<div className={`u-container ${styles.notFound}`}>Loading the editor…</div>}>
         <AdminPage
-          stays={catalog.stays}
+          stays={catalog.allStays}
           onExit={() => {
             setAdminOpen(false);
             window.history.replaceState({}, '', window.location.pathname);
@@ -125,13 +125,12 @@ function Shell() {
           <>
             <HeroSection
               stays={catalog.stays}
-              featured={catalog.featured}
+              featured={catalog.stays}
               onOpenStay={openStayView}
               onBrowse={() => scrollToSection('stays')}
             />
             <StayGrid
-              stays={catalog.featured}
-              totalInCatalog={catalog.stays.length}
+              stays={catalog.stays}
               isLoading={catalog.isLoading}
               error={catalog.error}
               proxyReachable={catalog.proxyReachable}

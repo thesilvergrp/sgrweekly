@@ -7,9 +7,18 @@ import { fetchStays, offlineStays } from '../../services/stays.service';
 import type { Stay } from '../../types/domain';
 
 export interface StayCatalog {
+  /**
+   * The PUBLISHED catalog — the only properties the public site may show,
+   * search, link to or plot on a map. This is `featuredStayIds` from the
+   * content document, not everything active in OwnerRez.
+   */
   stays: Stay[];
-  /** The subset shown in the home-page grid, per the content document. */
-  featured: Stay[];
+  /**
+   * Every active OwnerRez property, published or not. Exposed ONLY so the admin
+   * editor can choose what to publish and prepare copy in advance. Nothing on
+   * the public site may render from this.
+   */
+  allStays: Stay[];
   /** Where the rendered data came from. */
   source: 'live' | 'offline';
   isLoading: boolean;
@@ -63,14 +72,18 @@ export function useStayCatalog(): StayCatalog {
     [resolved, editorial.stays],
   );
 
-  const featured = useMemo(() => {
+  // The published set. Restricting it here rather than in each consumer means
+  // search, deep links, the map and the hero counts are all confined to it by
+  // construction — a property cannot leak onto the site by way of a component
+  // that forgot to filter.
+  const published = useMemo(() => {
     const wanted = new Set(content.featuredStayIds);
     return stays.filter((stay) => wanted.has(stay.id));
   }, [stays, content.featuredStayIds]);
 
   return {
-    stays,
-    featured,
+    stays: published,
+    allStays: stays,
     source: live ? 'live' : 'offline',
     isLoading: status === 'loading',
     error: status === 'error' ? error : undefined,

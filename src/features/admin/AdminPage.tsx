@@ -43,8 +43,8 @@ const PANELS: { id: PanelId; label: string; hint: string }[] = [
   { id: 'about', label: 'About', hint: 'Who you are, in your words.' },
   { id: 'contact', label: 'Contact', hint: 'The enquiry section.' },
   { id: 'footer', label: 'Footer', hint: 'Blurb and column headings.' },
-  { id: 'curation', label: 'Featured homes', hint: 'Which homes appear on the home page.' },
-  { id: 'stays', label: 'Property text', hint: 'Descriptions, amenities and photos, per home.' },
+  { id: 'curation', label: 'Published homes', hint: 'Which properties the site shows at all.' },
+  { id: 'stays', label: 'Property text', hint: 'Descriptions, amenities and photos. Includes unpublished properties, so you can write copy before putting one live.' },
   { id: 'business', label: 'Business details', hint: 'Phone, email, areas — used across the site.' },
   { id: 'meta', label: 'Page title', hint: 'Browser tab and description.' },
 ];
