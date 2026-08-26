@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Icon } from '../../components/icons';
-import { Button, LinkButton } from '../../components/ui/Button';
-import { Checkbox, Field, SelectInput, TextArea, TextInput } from '../../components/ui/Field';
+import { Button } from '../../components/ui/Button';
+import { Field, SelectInput, TextArea, TextInput } from '../../components/ui/Field';
 import { Notice } from '../../components/ui/Notice';
 import { EditThis } from '../admin/EditAffordance';
 import { SectionHeading } from '../../components/ui/SectionHeading';
@@ -21,9 +21,8 @@ interface ContactSectionProps {
  *
  * Posts to `/api/contact`, which relays through SES to the business inbox with
  * the sender's address as Reply-To. If that fails for any reason the form does
- * not pretend otherwise — it says so and offers the same prefilled `mailto:`
- * hand-off the site used before SES existed, so a visitor is never left with a
- * message that silently went nowhere.
+ * not pretend otherwise — it says so and points at the phone number, so a
+ * visitor is never left with a message that silently went nowhere.
  */
 export function ContactSection({ stays }: ContactSectionProps) {
   const { business, contact } = useSiteContent();
@@ -32,34 +31,16 @@ export function ContactSection({ stays }: ContactSectionProps) {
   const [phone, setPhone] = useState('');
   const [topic, setTopic] = useState(contact.topics[0]);
   const [message, setMessage] = useState('');
-  const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [company, setCompany] = useState(''); // honeypot
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [failure, setFailure] = useState<unknown>(null);
 
-  const mailtoHref = () => {
-    const body = [
-      message.trim(),
-      '',
-      `— ${name.trim()}`,
-      phone.trim() ? `Phone: ${phone.trim()}` : '',
-      `Email: ${email.trim()}`,
-    ]
-      .filter(Boolean)
-      .join('\n');
-    return `mailto:${business.email}?subject=${encodeURIComponent(
-      `${topic} — ${name.trim()}`,
-    )}&body=${encodeURIComponent(body)}`;
-  };
-
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const input = { name, email, phone, topic, message, company };
     const found = validateContact(input);
-    setErrors(found);
-    if (!consent) found.consent = 'Please confirm we can reply to you.';
     setErrors(found);
     if (Object.keys(found).length > 0) return;
 
@@ -144,14 +125,9 @@ export function ContactSection({ stays }: ContactSectionProps) {
                 tone="error"
                 title="We could not send that"
                 detail={describeError(failure).detail}
-                actions={
-                  <LinkButton href={mailtoHref()} size="sm" variant="quiet" iconStart="mail">
-                    Send it by email instead
-                  </LinkButton>
-                }
               >
-                Nothing was delivered. Use the button to send the same message from your own email
-                app, or call {business.phone} and we will pick it up from there.
+                Nothing was delivered. Please call {business.phone} and we will pick it up from
+                there.
               </Notice>
             )}
 
@@ -218,30 +194,35 @@ export function ContactSection({ stays }: ContactSectionProps) {
               )}
             </Field>
 
-            {/* Honeypot: off-screen and hidden from assistive tech, so only a bot
-                fills it. The server drops those and still answers 200. */}
+            {/*
+              Honeypot: off-screen and hidden from assistive tech, so only a bot
+              fills it. The server drops those and still answers 200.
+
+              The field is deliberately named `contact-alt` rather than anything
+              resembling "company". It used to be `name="company"`, and Chrome
+              and Safari IGNORE autocomplete="off" on organisation fields — they
+              filled it from the visitor's saved profile, tripping the honeypot
+              and silently binning real enquiries. The wire payload still uses
+              the `company` key; only the DOM attributes changed, because the
+              request body is built from React state, not from the form.
+
+              data-1p-ignore / data-lpignore keep 1Password and LastPass out for
+              the same reason.
+            */}
             <div aria-hidden="true" className="u-visually-hidden">
-              <label htmlFor="contact-company">Company (leave blank)</label>
+              <label htmlFor="contact-alt">Leave this field blank</label>
               <input
-                id="contact-company"
-                name="company"
+                id="contact-alt"
+                name="contact-alt"
                 type="text"
                 tabIndex={-1}
                 autoComplete="off"
+                data-1p-ignore
+                data-lpignore="true"
                 value={company}
                 onChange={(event) => setCompany(event.target.value)}
               />
             </div>
-
-            <Checkbox checked={consent} onChange={(event) => setConsent(event.target.checked)}>
-              You can contact me about this enquiry. We never pass details to anyone else.
-              {errors.consent && (
-                <>
-                  <br />
-                  <span style={{ color: 'var(--rust)' }}>{errors.consent}</span>
-                </>
-              )}
-            </Checkbox>
 
             <div className={styles.actions}>
               <Button type="submit" size="lg" iconStart="mail" loading={sending} disabled={sent}>
