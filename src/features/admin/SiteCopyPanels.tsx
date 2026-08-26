@@ -10,8 +10,6 @@ import type {
   SiteMeta,
   StayDefaults,
 } from '../../content/site-content';
-import type { Stay } from '../../types/domain';
-import { Checkbox } from '../../components/ui/Field';
 import { FeatureListEditor, StringListEditor, TextBlock, TextRow } from './controls';
 import styles from './Admin.module.css';
 
@@ -246,44 +244,6 @@ export function StayTermsPanel({ value, patch }: { value: StayDefaults; patch: P
         value={value.cancellationPolicy}
         onChange={(cancellationPolicy) => set({ cancellationPolicy })}
       />
-    </div>
-  );
-}
-
-export function CurationPanel({
-  featuredStayIds,
-  stays,
-  patch,
-}: {
-  featuredStayIds: string[];
-  stays: Stay[];
-  patch: Patch;
-}) {
-  const toggle = (id: string, on: boolean) =>
-    patch({
-      featuredStayIds: on
-        ? [...featuredStayIds, id]
-        : featuredStayIds.filter((current) => current !== id),
-    });
-
-  return (
-    <div className={styles.group}>
-      <p className={styles.groupTitle}>Homes published on the site</p>
-      <p className={styles.panelHint}>
-        This is the whole of what the public site shows. An unticked property is invisible — not in
-        the grid, not in search, not reachable from a shared link, not on the map — even though it
-        stays active in OwnerRez. Unticking everything is ignored when the document is read, so the
-        site can never end up with nothing on it.
-      </p>
-      {stays.map((stay) => (
-        <Checkbox
-          key={stay.id}
-          checked={featuredStayIds.includes(stay.id)}
-          onChange={(event) => toggle(stay.id, event.target.checked)}
-        >
-          {stay.name} <span className={styles.mono}>({stay.id})</span>
-        </Checkbox>
-      ))}
     </div>
   );
 }

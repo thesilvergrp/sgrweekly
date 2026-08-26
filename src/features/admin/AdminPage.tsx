@@ -20,12 +20,12 @@ import {
   BusinessPanel,
   CollectionPanel,
   ContactPanel,
-  CurationPanel,
   FooterPanel,
   HeroPanel,
   MetaPanel,
   StayTermsPanel,
 } from './SiteCopyPanels';
+import { CurationPanel } from './CurationPanel';
 import { StaysPanel } from './StaysPanel';
 import styles from './Admin.module.css';
 

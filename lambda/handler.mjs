@@ -373,7 +373,42 @@ async function or(path, { method = 'GET', body, base = OR_BASE } = {}) {
   return text ? JSON.parse(text) : null;
 }
 
-const listProperties = () => or('/properties?active=true');
+/**
+ * The property list, carrying the PUBLIC name.
+ *
+ * `/properties` does not return `external_name` — OwnerRez exposes it only on
+ * the single-property read and on `/propertysearch`, and no include parameter
+ * adds it to the list. That field is the guest-facing name the booking widget
+ * shows; plain `name` is the owner's internal label ("Tiger", "Avon", "Forest
+ * Park"). Serving the list unmerged is why the site displayed internal names,
+ * and why the content document grew a hand-maintained `displayName` override
+ * for every property to paper over it.
+ *
+ * `/propertysearch` is cheap — id, key, name, external_name and nothing else —
+ * so both are fetched in parallel and merged here, once, where the frontend
+ * cannot forget to do it. If the search call fails the list is returned as-is:
+ * internal names are a cosmetic regression, an unavailable catalog is not.
+ */
+async function listProperties() {
+  const [list, search] = await Promise.all([
+    or('/properties?active=true'),
+    or('/propertysearch?limit=100').catch(() => null),
+  ]);
+  if (!search) return list;
+
+  const publicNames = new Map();
+  for (const row of search.items ?? []) {
+    const name = typeof row.external_name === 'string' ? row.external_name.trim() : '';
+    if (name) publicNames.set(String(row.id), name);
+  }
+  if (publicNames.size === 0) return list;
+
+  const items = (list?.items ?? []).map((property) => {
+    const external = publicNames.get(String(property.id));
+    return external ? { ...property, external_name: external } : property;
+  });
+  return { ...list, items };
+}
 const getProperty = (id) => or(`/properties/${encodeURIComponent(id)}`);
 const listBookings = (id, since, offset, limit) => {
   let p = `/bookings?property_ids=${encodeURIComponent(id)}&since_utc=${encodeURIComponent(since)}`;
