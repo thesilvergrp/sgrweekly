@@ -354,7 +354,7 @@ IMPORTANT: You will be required to sign a Renter Agreement.`,
   },
   {
     ownerRezId: '444166',
-    displayName: 'The Silver Hideaway',
+    displayName: 'Gateway City Getaway II',
     slug: 'the-silver-hideaway',
     summary: 'Stylish home 15 minutes from downtown and six miles from the airport — great for quick stays.',
     story: `Looking for the perfect spot to crash while exploring Atlanta? This stylish pad is where convenience meets good vibes! Just 15 minutes from downtown, you're super close to the hottest spots like Beltline bars, epic concerts, and must-try eats. Need to catch a flight? Just over six miles from the Airport, this home is the spot! Chill in a quiet neighborhood while staying connected to the action. Perfect for weekend getaways, group trips, quick stays for pilots and flight attendants, or spontaneous adventures—your ATL story starts here!`,

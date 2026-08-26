@@ -251,7 +251,7 @@ export const defaultSiteContent: SiteContentDocument = {
   featuredStayIds: [
     '478121', // The Silver Suite I
     '476709', // The Silver Studio II
-    '444166', // The Silver Hideaway
+    '444166', // Gateway City Getaway II (OwnerRez 'Forest Park', 575 Springwood Dr #4)
     '451644', // The Silver Chic Studio
     '428819', // The Silver Spot
     '395467', // The Silver Cottage
