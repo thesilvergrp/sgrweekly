@@ -58,3 +58,58 @@ export function readCheckoutMessage(data: unknown): string | null {
   }
   return null;
 }
+
+/** Heights outside this range are noise, not a real content measurement. */
+const MIN_FRAME_HEIGHT = 240;
+const MAX_FRAME_HEIGHT = 20_000;
+
+function clampHeight(value: number): number | null {
+  if (!Number.isFinite(value)) return null;
+  const height = Math.ceil(value);
+  if (height < MIN_FRAME_HEIGHT || height > MAX_FRAME_HEIGHT) return null;
+  return height;
+}
+
+/**
+ * Extracts a content height in CSS pixels from a widget postMessage, or null.
+ *
+ * WHY THIS EXISTS: the widget page is designed to be resized by OwnerRez's own
+ * widget.js, which we deliberately do not load (see the note at the top of this
+ * file). The page inside the iframe therefore does not scroll itself — it
+ * assumes the embedder grows the frame to fit. Give the iframe a fixed height
+ * and everything below it, including the discount code field and the payment
+ * button, is simply unreachable.
+ *
+ * The payload shape is undocumented, so every plausible spelling is accepted.
+ * The origin check is the caller's responsibility and is not optional.
+ */
+export function readHeightMessage(data: unknown): number | null {
+  let payload = data;
+
+  if (typeof payload === 'string') {
+    const bare = Number(payload);
+    if (Number.isFinite(bare)) return clampHeight(bare);
+
+    // Non-JSON string forms such as "height:1234" appear in embed scripts.
+    const match = /height["':\s]+(\d+(?:\.\d+)?)/i.exec(payload);
+    if (match) return clampHeight(Number(match[1]));
+
+    try {
+      payload = JSON.parse(payload);
+    } catch {
+      return null;
+    }
+  }
+
+  if (!payload || typeof payload !== 'object') return null;
+  const record = payload as Record<string, unknown>;
+
+  for (const key of ['height', 'iframeHeight', 'frameHeight', 'documentHeight', 'scrollHeight', 'or_height']) {
+    const raw = record[key];
+    const value = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw) : NaN;
+    const height = clampHeight(value);
+    if (height !== null) return height;
+  }
+
+  return null;
+}

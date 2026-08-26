@@ -1,6 +1,11 @@
 .frame {
   display: block;
   width: 100%;
+  /*
+   * Height before the widget reports its own. Once it does — or the fallback
+   * fires — an inline style takes over. The modal body scrolls, so a frame
+   * taller than the panel stays fully reachable rather than clipping the form.
+   */
   height: min(72vh, 46rem);
   border: 0;
   background: var(--surface);
