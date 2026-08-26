@@ -2,6 +2,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  height: 100%;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
@@ -104,10 +105,27 @@
   outline: none;
 }
 
+/*
+ * Summaries come from OwnerRez and vary wildly in length. Clamping them keeps a
+ * long one from stretching its whole row, and the reserved height keeps the
+ * divider on the same line across cards whose summary is a single sentence.
+ */
 .summary {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  min-height: calc(3lh);
   font-size: var(--text-sm);
   color: var(--ink-muted);
   line-height: var(--leading-snug);
+}
+
+@supports not (height: 1lh) {
+  .summary {
+    min-height: calc(3 * var(--leading-snug) * var(--text-sm));
+  }
 }
 
 .meta {
